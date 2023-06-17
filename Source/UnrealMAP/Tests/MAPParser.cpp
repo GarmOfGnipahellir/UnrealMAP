@@ -197,6 +197,45 @@ bool MAPParser_Vector::RunTest(const FString& Parameters)
 }
 
 IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(
+	MAPParser_Comment,
+	FAutomationTestParser,
+	"UnrealMAP.MAPParser.Comment",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter
+)
+
+bool MAPParser_Comment::RunTest(const FString& Parameters)
+{
+	TestEqualParsed<FString, FString>(FMAPParser::Comment("// Game: Unreal"), "", " Game: Unreal");
+	TestEqualParsed<FString, FString>(FMAPParser::Comment("// entity 0"), "", " entity 0");
+	TestEqualParsed<FString, FString>(FMAPParser::Comment("// brush 0"), "", " brush 0");
+	TestEqualParsed<FString, FString>(FMAPParser::Comment("// foo: bar\nbaz"), "\nbaz", " foo: bar");
+
+	return true;
+}
+
+IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(
+	MAPParser_Comments,
+	FAutomationTestParser,
+	"UnrealMAP.MAPParser.Comments",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter
+)
+
+bool MAPParser_Comments::RunTest(const FString& Parameters)
+{
+	TestEqualParsed<FString, TArray<FString>>(
+		FMAPParser::Comments(
+			"// Game: Unreal\n"
+			"// entity 0\n"
+			"// brush 0"
+		),
+		"",
+		{" Game: Unreal", " entity 0", " brush 0"}
+	);
+
+	return true;
+}
+
+IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(
 	MAPParser_MAPPlane,
 	FAutomationTestParser,
 	"UnrealMAP.MAPParser.MAPPlane",
@@ -349,6 +388,138 @@ bool MAPParser_MAPProperties::RunTest(const FString& Parameters)
 				}
 			)
 		)
+	);
+
+	return true;
+}
+
+IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(
+	MAPParser_MAPEntity,
+	FAutomationTestParser,
+	"UnrealMAP.MAPParser.MAPEntity",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter
+)
+
+bool MAPParser_MAPEntity::RunTest(const FString& Parameters)
+{
+	TestEqualParsed<FString, FMAPEntity>(
+		FMAPParser::MAPEntity(
+			"// entity 0\n"
+			"{\n"
+			"\"classname\" \"worldspawn\"\n"
+			"\"mapversion\" \"220\"\n"
+			"\"_tb_textures\" \"textures/base\"\n"
+			"// brush 0\n"
+			"{\n"
+			"( -240 -64 -16 ) ( -240 -63 -16 ) ( -240 -64 -15 ) __TB_empty [ 0 -1 0 0 ] [ -0 -0 -1 0 ] 0 1 1\n"
+			"( -64 -192 -16 ) ( -64 -192 -15 ) ( -63 -192 -16 ) __TB_empty [ 1 0 -0 0 ] [ 0 -0 -1 0 ] 0 1 1\n"
+			"( -64 -64 -16 ) ( -63 -64 -16 ) ( -64 -63 -16 ) __TB_empty [ -1 0 0 0 ] [ -0 -1 -0 0 ] 0 1 1\n"
+			"( 64 64 0 ) ( 64 65 0 ) ( 65 64 0 ) __TB_empty [ 1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1\n"
+			"( 64 192 16 ) ( 65 192 16 ) ( 64 192 17 ) __TB_empty [ -1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1\n"
+			"( 256 64 16 ) ( 256 64 17 ) ( 256 65 16 ) __TB_empty [ 0 1 0 0 ] [ 0 0 -1 0 ] 0 1 1\n"
+			"}\n"
+			"}"
+		),
+		"",
+		FMAPEntity{
+			FMAPParser::MAPProperties(
+				"\"classname\" \"worldspawn\"\n"
+				"\"mapversion\" \"220\"\n"
+				"\"_tb_textures\" \"textures/base\""
+			).Value,
+			{
+				FMAPParser::MAPBrush(
+					"{\n"
+					"( -240 -64 -16 ) ( -240 -63 -16 ) ( -240 -64 -15 ) __TB_empty [ 0 -1 0 0 ] [ -0 -0 -1 0 ] 0 1 1\n"
+					"( -64 -192 -16 ) ( -64 -192 -15 ) ( -63 -192 -16 ) __TB_empty [ 1 0 -0 0 ] [ 0 -0 -1 0 ] 0 1 1\n"
+					"( -64 -64 -16 ) ( -63 -64 -16 ) ( -64 -63 -16 ) __TB_empty [ -1 0 0 0 ] [ -0 -1 -0 0 ] 0 1 1\n"
+					"( 64 64 0 ) ( 64 65 0 ) ( 65 64 0 ) __TB_empty [ 1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1\n"
+					"( 64 192 16 ) ( 65 192 16 ) ( 64 192 17 ) __TB_empty [ -1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1\n"
+					"( 256 64 16 ) ( 256 64 17 ) ( 256 65 16 ) __TB_empty [ 0 1 0 0 ] [ 0 0 -1 0 ] 0 1 1\n"
+					"}"
+				).Value
+			}
+		}
+	);
+
+	return true;
+}
+
+IMPLEMENT_CUSTOM_SIMPLE_AUTOMATION_TEST(
+	MAPParser_MAPMap,
+	FAutomationTestParser,
+	"UnrealMAP.MAPParser.MAPMap",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter
+)
+
+bool MAPParser_MAPMap::RunTest(const FString& Parameters)
+{
+	TestEqualParsed<FString, FMAPMap>(
+		FMAPParser::MAPMap(
+			"// Game: Unreal\n"
+			"// Format: Valve\n"
+			"// entity 0\n"
+			"{\n"
+			"\"classname\" \"worldspawn\"\n"
+			"\"mapversion\" \"220\"\n"
+			"\"_tb_textures\" \"textures/base\"\n"
+			"// brush 0\n"
+			"{\n"
+			"( -240 -64 -16 ) ( -240 -63 -16 ) ( -240 -64 -15 ) __TB_empty [ 0 -1 0 0 ] [ -0 -0 -1 0 ] 0 1 1\n"
+			"( -64 -192 -16 ) ( -64 -192 -15 ) ( -63 -192 -16 ) __TB_empty [ 1 0 -0 0 ] [ 0 -0 -1 0 ] 0 1 1\n"
+			"( -64 -64 -16 ) ( -63 -64 -16 ) ( -64 -63 -16 ) __TB_empty [ -1 0 0 0 ] [ -0 -1 -0 0 ] 0 1 1\n"
+			"( 64 64 0 ) ( 64 65 0 ) ( 65 64 0 ) __TB_empty [ 1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1\n"
+			"( 64 192 16 ) ( 65 192 16 ) ( 64 192 17 ) __TB_empty [ -1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1\n"
+			"( 256 64 16 ) ( 256 64 17 ) ( 256 65 16 ) __TB_empty [ 0 1 0 0 ] [ 0 0 -1 0 ] 0 1 1\n"
+			"}\n"
+			"}\n"
+			"// entity 1\n"
+			"{\n"
+			"\"classname\" \"illusionary\"\n"
+			"// brush 0\n"
+			"{\n"
+			"( 1008 544 0 ) ( 1024 704 0 ) ( 1024 704 128 ) special/skip [ -0.0995037 -0.995037 0 461.697 ] [ 0 0 -1 0 ] 0 1 1\n"
+			"( 1008 544 0 ) ( 1024 480 128 ) ( 1024 480 0 ) special/skip [ 0.242536 -0.970143 0 395.818 ] [ 0 0 -1 0 ] 0 1 1\n"
+			"( 768 448 -16 ) ( 769 448 -16 ) ( 768 449 -16 ) special/skip [ -1 0 0 160 ] [ 0 -1 0 448 ] 0 1 1\n"
+			"( 1024 704 0 ) ( 1024 705 0 ) ( 1025 704 0 ) special/skip [ 1 0 0 -160 ] [ 0 -1 0 448 ] 0 1 1\n"
+			"( 1024 704 0 ) ( 1024 704 1 ) ( 1024 705 0 ) special/skip [ 0 1 0 -448 ] [ 0 0 -1 0 ] 0 1 1\n"
+			"}\n"
+			"}"
+		),
+		"",
+		FMAPMap{
+			{
+				FMAPParser::MAPEntity(
+					"{\n"
+					"\"classname\" \"worldspawn\"\n"
+					"\"mapversion\" \"220\"\n"
+					"\"_tb_textures\" \"textures/base\"\n"
+					"// brush 0\n"
+					"{\n"
+					"( -240 -64 -16 ) ( -240 -63 -16 ) ( -240 -64 -15 ) __TB_empty [ 0 -1 0 0 ] [ -0 -0 -1 0 ] 0 1 1\n"
+					"( -64 -192 -16 ) ( -64 -192 -15 ) ( -63 -192 -16 ) __TB_empty [ 1 0 -0 0 ] [ 0 -0 -1 0 ] 0 1 1\n"
+					"( -64 -64 -16 ) ( -63 -64 -16 ) ( -64 -63 -16 ) __TB_empty [ -1 0 0 0 ] [ -0 -1 -0 0 ] 0 1 1\n"
+					"( 64 64 0 ) ( 64 65 0 ) ( 65 64 0 ) __TB_empty [ 1 0 0 0 ] [ 0 -1 0 0 ] 0 1 1\n"
+					"( 64 192 16 ) ( 65 192 16 ) ( 64 192 17 ) __TB_empty [ -1 0 0 0 ] [ 0 0 -1 0 ] 0 1 1\n"
+					"( 256 64 16 ) ( 256 64 17 ) ( 256 65 16 ) __TB_empty [ 0 1 0 0 ] [ 0 0 -1 0 ] 0 1 1\n"
+					"}\n"
+					"}"
+				).Value,
+				FMAPParser::MAPEntity(
+					"{\n"
+					"\"classname\" \"illusionary\"\n"
+					"// brush 0\n"
+					"{\n"
+					"( 1008 544 0 ) ( 1024 704 0 ) ( 1024 704 128 ) special/skip [ -0.0995037 -0.995037 0 461.697 ] [ 0 0 -1 0 ] 0 1 1\n"
+					"( 1008 544 0 ) ( 1024 480 128 ) ( 1024 480 0 ) special/skip [ 0.242536 -0.970143 0 395.818 ] [ 0 0 -1 0 ] 0 1 1\n"
+					"( 768 448 -16 ) ( 769 448 -16 ) ( 768 449 -16 ) special/skip [ -1 0 0 160 ] [ 0 -1 0 448 ] 0 1 1\n"
+					"( 1024 704 0 ) ( 1024 705 0 ) ( 1025 704 0 ) special/skip [ 1 0 0 -160 ] [ 0 -1 0 448 ] 0 1 1\n"
+					"( 1024 704 0 ) ( 1024 704 1 ) ( 1024 705 0 ) special/skip [ 0 1 0 -448 ] [ 0 0 -1 0 ] 0 1 1\n"
+					"}\n"
+					"}"
+				).Value
+			}
+		}
 	);
 
 	return true;

@@ -43,6 +43,9 @@ struct FMAPEntity
 {
 	TMap<FString, FString> Properties;
 	TArray<FMAPBrush> Brushes;
+
+	bool operator==(const FMAPEntity& Other) const;
+	bool operator!=(const FMAPEntity& Other) const;
 };
 
 struct FMAPGroup
@@ -56,4 +59,7 @@ struct FMAPGroup
 struct FMAPMap
 {
 	TArray<FMAPEntity> Entities;
+
+	bool operator==(const FMAPMap& Other) const;
+	bool operator!=(const FMAPMap& Other) const;
 };

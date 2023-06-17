@@ -57,3 +57,23 @@ bool FMAPBrush::operator!=(const FMAPBrush& Other) const
 {
 	return Faces != Other.Faces;
 }
+
+bool FMAPEntity::operator==(const FMAPEntity& Other) const
+{
+	return Properties.OrderIndependentCompareEqual(Other.Properties) && Brushes == Other.Brushes;
+}
+
+bool FMAPEntity::operator!=(const FMAPEntity& Other) const
+{
+	return !Properties.OrderIndependentCompareEqual(Other.Properties) || Brushes != Other.Brushes;
+}
+
+bool FMAPMap::operator==(const FMAPMap& Other) const
+{
+	return Entities == Other.Entities;
+}
+
+bool FMAPMap::operator!=(const FMAPMap& Other) const
+{
+	return Entities != Other.Entities;
+}
