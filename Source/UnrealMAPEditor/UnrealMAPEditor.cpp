@@ -2,19 +2,35 @@
 
 #include "UnrealMAPEditor.h"
 
+#include "MAPComponentVisualizer.h"
+#include "UnrealEdGlobals.h"
+#include "Editor/UnrealEdEngine.h"
+#include "UnrealMAP/MAPComponent.h"
+
 #define LOCTEXT_NAMESPACE "FUnrealMAPEditorModule"
 
 void FUnrealMAPEditorModule::StartupModule()
 {
-	// This code will execute after your module is loaded into memory; the exact timing is specified in the .uplugin file per-module
+	if (GUnrealEd != nullptr)
+	{
+		if (const TSharedPtr<FMAPComponentVisualizer> Visualizer = MakeShareable(
+			new FMAPComponentVisualizer
+		); Visualizer.IsValid())
+		{
+			GUnrealEd->RegisterComponentVisualizer(UMAPComponent::StaticClass()->GetFName(), Visualizer);
+			Visualizer->OnRegister();
+		}
+	}
 }
 
 void FUnrealMAPEditorModule::ShutdownModule()
 {
-	// This function may be called during shutdown to clean up your module.  For modules that support dynamic reloading,
-	// we call this function before unloading the module.
+	if (GUnrealEd != nullptr)
+	{
+		GUnrealEd->UnregisterComponentVisualizer(UMAPComponent::StaticClass()->GetFName());
+	}
 }
 
 #undef LOCTEXT_NAMESPACE
-	
+
 IMPLEMENT_MODULE(FUnrealMAPEditorModule, UnrealMAPEditor)

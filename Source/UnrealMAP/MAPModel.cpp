@@ -5,15 +5,12 @@
 
 FVector FMAPPlane::GetNormal() const
 {
-	return FVector::CrossProduct(
-		P1 - P0,
-		P2 - P0
-	).GetSafeNormal();
+	return ((P2 - P0) ^ (P1 - P0)).GetSafeNormal();
 }
 
 double FMAPPlane::GetDistance() const
 {
-	return GetNormal().Dot(P0);
+	return GetNormal() | P0;
 }
 
 FORCEINLINE bool FMAPPlane::operator==(const FMAPPlane& Other) const

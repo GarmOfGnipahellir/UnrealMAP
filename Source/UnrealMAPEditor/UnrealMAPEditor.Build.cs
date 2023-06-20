@@ -34,11 +34,15 @@ public class UnrealMAPEditor : ModuleRules
 		PrivateDependencyModuleNames.AddRange(
 			new string[]
 			{
+				"UnrealMAP",
 				"CoreUObject",
 				"Engine",
 				"Slate",
 				"SlateCore",
-				"UnrealMAP",
+				"UnrealEd",
+				"AssetTools",
+				"ContentBrowserData",
+				"ContentBrowserFileDataSource",
 				// ... add private dependencies that you statically link with here ...	
 			}
 		);
