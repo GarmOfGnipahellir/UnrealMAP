@@ -14,10 +14,10 @@ FMAPVertexWinding::FMAPVertexWinding(
 {
 }
 
-FORCEINLINE bool FMAPVertexWinding::operator()(const FVector& A, const FVector& B) const
+FORCEINLINE bool FMAPVertexWinding::operator()(const FMAPVertex& A, const FMAPVertex& B) const
 {
-	const auto Lhs = A - Center;
-	const auto Rhs = B - Center;
+	const auto Lhs = A.Position - Center;
+	const auto Rhs = B.Position - Center;
 
 	const auto LhsPu = Lhs | UAxis;
 	const auto LhsPv = Lhs | VAxis;
@@ -66,29 +66,34 @@ bool FMAPBuilder::LocationInHull(const FVector& Location, const FMAPBrush& Brush
 	return true;
 }
 
-bool FMAPBuilder::PlaneVertex(
-	const FMAPPlane& Plane,
+bool FMAPBuilder::FaceVertex(
+	const FMAPFace& Face,
 	const FMAPPlane& Plane1,
 	const FMAPPlane& Plane2,
 	const FMAPBrush& Brush,
-	FVector& OutLocation)
+	FMAPVertex& OutVertex)
 {
-	if (!PlaneIntersection(Plane, Plane1, Plane2, OutLocation))
+	FVector Position;
+	if (!PlaneIntersection(Face.Plane, Plane1, Plane2, Position))
+	{
+		return false;
+	}
+	if (!LocationInHull(Position, Brush))
 	{
 		return false;
 	}
 
-	if (!LocationInHull(OutLocation, Brush))
-	{
-		return false;
-	}
+	const FVector UAxis = Face.U / Face.Scale.X;
+	const FVector VAxis = Face.V / Face.Scale.Y;
+	const FVector2d UV = FVector2d(Position | UAxis, Position | VAxis) + Face.Offset;
 
+	OutVertex = FMAPVertex{Position, UV};
 	return true;
 }
 
-TArray<FVector> FMAPBuilder::FilterDuplicates(const TArray<FVector>& Vertices)
+TArray<FMAPVertex> FMAPBuilder::FilterDuplicates(const TArray<FMAPVertex>& Vertices)
 {
-	TArray<FVector> Result;
+	TArray<FMAPVertex> Result;
 	for (int i = 0; i < Vertices.Num(); ++i)
 	{
 		bool bUnique = true;
@@ -97,7 +102,7 @@ TArray<FVector> FMAPBuilder::FilterDuplicates(const TArray<FVector>& Vertices)
 		{
 			if (i == j) continue;
 
-			if (Vertices[i].Equals(Vertices[j]))
+			if (Vertices[i].Position.Equals(Vertices[j].Position))
 			{
 				bUnique = false;
 				break;
@@ -112,14 +117,14 @@ TArray<FVector> FMAPBuilder::FilterDuplicates(const TArray<FVector>& Vertices)
 	return Result;
 }
 
-void FMAPBuilder::SortVertices(const FMAPFace& Face, TArray<FVector>& Vertices)
+void FMAPBuilder::SortVertices(const FMAPFace& Face, TArray<FMAPVertex>& Vertices)
 {
 	const auto UAxis = (Face.Plane.P1 - Face.Plane.P0).GetSafeNormal();
 	const auto VAxis = Face.Plane.GetNormal() ^ UAxis;
 	FVector Center;
 	for (const auto Vertex : Vertices)
 	{
-		Center += Vertex;
+		Center += Vertex.Position;
 	}
 	Center /= Vertices.Num();
 
@@ -136,19 +141,20 @@ UStaticMesh* FMAPBuilder::BrushMesh(const FMAPBrush& Brush)
 	FStaticMeshAttributes Attributes(*Desc);
 	const TVertexAttributesRef<FVector3f> VertexPositions = Attributes.GetVertexPositions();
 	const TVertexInstanceAttributesRef<FVector3f> VertexInstanceNormals = Attributes.GetVertexInstanceNormals();
+	const TVertexInstanceAttributesRef<FVector2f> VertexInstanceUVs = Attributes.GetVertexInstanceUVs();
 
 	for (const FMAPFace& Face : Brush.Faces)
 	{
-		TArray<FVector> FaceVertices;
+		TArray<FMAPVertex> FaceVertices;
 
 		for (const FMAPFace& Face1 : Brush.Faces)
 		{
 			for (const FMAPFace& Face2 : Brush.Faces)
 			{
-				FVector VertexLocation;
-				if (PlaneVertex(Face.Plane, Face1.Plane, Face2.Plane, Brush, VertexLocation))
+				FMAPVertex Vertex;
+				if (FaceVertex(Face, Face1.Plane, Face2.Plane, Brush, Vertex))
 				{
-					FaceVertices.Add(VertexLocation);
+					FaceVertices.Add(Vertex);
 				}
 			}
 		}
@@ -156,13 +162,16 @@ UStaticMesh* FMAPBuilder::BrushMesh(const FMAPBrush& Brush)
 		FaceVertices = FilterDuplicates(FaceVertices);
 		SortVertices(Face, FaceVertices);
 
+		FVector FaceNormal = Face.Plane.GetNormal();
+
 		TArray<FVertexInstanceID> VertexInstanceIDs;
-		for (const FVector& Vertex : FaceVertices)
+		for (const FMAPVertex& Vertex : FaceVertices)
 		{
 			const FVertexID VertexID = Desc->CreateVertex();
-			VertexPositions[VertexID] = FVector3f(Vertex);
+			VertexPositions[VertexID] = FVector3f(Vertex.Position);
 			const FVertexInstanceID VertexInstanceID = Desc->CreateVertexInstance(VertexID);
-			VertexInstanceNormals[VertexInstanceID] = FVector3f(Face.Plane.GetNormal());
+			VertexInstanceNormals[VertexInstanceID] = FVector3f(FaceNormal);
+			VertexInstanceUVs[VertexInstanceID] = FVector2f(Vertex.UV);
 			VertexInstanceIDs.Add(VertexInstanceID);
 		}
 

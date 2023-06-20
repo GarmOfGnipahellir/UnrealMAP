@@ -5,6 +5,12 @@
 #include "CoreMinimal.h"
 #include "MAPModel.h"
 
+struct FMAPVertex
+{
+	FVector Position;
+	FVector2d UV;
+};
+
 struct FMAPVertexWinding
 {
 	FVector UAxis;
@@ -13,7 +19,7 @@ struct FMAPVertexWinding
 
 	FMAPVertexWinding(const FVector& InUAxis, const FVector& InVAxis, const FVector& InCenter);
 
-	bool operator()(const FVector& A, const FVector& B) const;
+	bool operator()(const FMAPVertex& A, const FMAPVertex& B) const;
 };
 
 /**
@@ -30,16 +36,16 @@ public:
 
 	static bool LocationInHull(const FVector& Location, const FMAPBrush& Brush);
 
-	static bool PlaneVertex(
-		const FMAPPlane& Plane,
+	static bool FaceVertex(
+		const FMAPFace& Face,
 		const FMAPPlane& Plane1,
 		const FMAPPlane& Plane2,
 		const FMAPBrush& Brush,
-		FVector& OutLocation);
+		FMAPVertex& OutVertex);
 
-	static TArray<FVector> FilterDuplicates(const TArray<FVector>& Vertices);
+	static TArray<FMAPVertex> FilterDuplicates(const TArray<FMAPVertex>& Vertices);
 
-	static void SortVertices(const FMAPFace& Face, TArray<FVector>& Vertices);
+	static void SortVertices(const FMAPFace& Face, TArray<FMAPVertex>& Vertices);
 
 	static UStaticMesh* BrushMesh(const FMAPBrush& Brush);
 };

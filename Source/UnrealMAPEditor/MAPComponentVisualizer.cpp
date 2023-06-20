@@ -23,20 +23,22 @@ void FMAPComponentVisualizer::DrawVisualization(
 		for (const FMAPBrush& Brush : Entity.Brushes)
 		{
 			TArray<FDynamicMeshVertex> BrushVertices;
-			
+
 			for (const FMAPFace& Face : Brush.Faces)
 			{
-				TArray<FVector> FaceVertices;
+				TArray<FMAPVertex> FaceVertices;
 
 				for (const FMAPFace& Face1 : Brush.Faces)
 				{
 					for (const FMAPFace& Face2 : Brush.Faces)
 					{
-						FVector VertexLocation;
-						if (FMAPBuilder::PlaneVertex(Face.Plane, Face1.Plane, Face2.Plane, Brush, VertexLocation))
+						FMAPVertex Vertex;
+						if (FMAPBuilder::FaceVertex(Face, Face1.Plane, Face2.Plane, Brush, Vertex))
 						{
-							FaceVertices.Add(VertexLocation);
-							VertexLocation = MAPComponent->GetComponentTransform().TransformPosition(VertexLocation);
+							FaceVertices.Add(Vertex);
+							const FVector VertexLocation = MAPComponent->GetComponentTransform().TransformPosition(
+								Vertex.Position
+							);
 							PDI->DrawPoint(VertexLocation, FColor::White, 16.0f, SDPG_World);
 						}
 					}
@@ -47,9 +49,15 @@ void FMAPComponentVisualizer::DrawVisualization(
 
 				for (int i = 0; i < FaceVertices.Num(); ++i)
 				{
+					const FVector Start = MAPComponent->GetComponentTransform().TransformPosition(
+						FaceVertices[i].Position
+					);
+					const FVector End = MAPComponent->GetComponentTransform().TransformPosition(
+						FaceVertices[(i + 1) % FaceVertices.Num()].Position
+					);
 					PDI->DrawLine(
-						FaceVertices[i],
-						FaceVertices[(i + 1) % FaceVertices.Num()],
+						Start,
+						End,
 						FColor::White,
 						SDPG_World
 					);
