@@ -89,6 +89,7 @@ bool MAPParser_Float::RunTest(const FString& Parameters)
 	TestEqualParsed<FString, float>(FMAPParser::Float("272.56441888656036"), "", 272.56441888656036f);
 	TestEqualParsed<FString, float>(FMAPParser::Float("-0.0503174"), "", -0.0503174f);
 	TestEqualParsed<FString, float>(FMAPParser::Float("0.382199 -0.922709"), " -0.922709", 0.382199f);
+	TestEqualParsed<FString, float>(FMAPParser::Float("2.22045e-16"), "", 0.000000000000000222045f);
 
 	try
 	{
@@ -287,6 +288,21 @@ bool MAPParser_MAPFace::RunTest(const FString& Parameters)
 			FVector2d(1, 2)
 		}
 	);
+	TestEqualParsed<FString, FMAPFace>(
+		FMAPParser::MAPFace(
+			"( -240 -64 -16 ) ( -240 -63 -16 ) ( -240 -64 -15 ) base/grid [ 0 -1 0 0 ] [ -0 -0 -1 0 ] 0 1 1"
+		),
+		"",
+		FMAPFace{
+			FMAPPlane{FVector(-240, -64, -16), FVector(-240, -63, -16), FVector(-240, -64, -15)},
+			"base/grid",
+			FVector(0, -1, 0),
+			FVector(0, 0, -1),
+			FVector2d(0, 0),
+			0,
+			FVector2d(1, 1)
+		}
+	);
 
 	return true;
 }
@@ -357,6 +373,11 @@ bool MAPParser_MAPProperty::RunTest(const FString& Parameters)
 		FMAPParser::MAPProperty("\"_tb_textures\" \"textures/base\""),
 		"",
 		TTuple<FString, FString>("_tb_textures", "textures/base")
+	);
+	TestEqualParsed<FString, TTuple<FString, FString>>(
+		FMAPParser::MAPProperty("\"_tb_textures\" \"textures/base;textures/special\""),
+		"",
+		TTuple<FString, FString>("_tb_textures", "textures/base;textures/special")
 	);
 
 	return true;

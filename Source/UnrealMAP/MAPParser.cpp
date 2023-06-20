@@ -6,6 +6,8 @@
 
 #include <cwctype>
 
+#include "MAPLog.h"
+
 TTuple<FString, FString> FMAPParser::Tag(const FString& Tag, const FString& Input)
 {
 	if (!Input.StartsWith(Tag))
@@ -42,23 +44,38 @@ TTuple<FString, FString> FMAPParser::NotChar(const wchar_t& Char, const FString&
 
 TTuple<FString, float> FMAPParser::Float(const FString& Input)
 {
-	FString Text;
+	FString Base;
+	FString Exponent;
+	bool bHasExponent = false;
 	for (const auto c : Input)
 	{
+		if (c == 'e')
+		{
+			bHasExponent = true;
+			continue;
+		}
+
 		if (c != '-' && c != '.' && !std::iswdigit(c)) break;
 
-		Text += c;
+		if (!bHasExponent)
+		{
+			Base += c;
+		}
+		else
+		{
+			Exponent += c;
+		}
 	}
 
-	if (!Text.IsNumeric())
+	if (!Base.IsNumeric() || (bHasExponent && !Exponent.IsNumeric()))
 	{
 		throw std::exception("Unmatched float");
 	}
 
-	return TTuple<FString, float>(
-		Input.Right(Input.Len() - Text.Len()),
-		FCString::Atof(*Text)
-	);
+	const int Len = bHasExponent ? Base.Len() + Exponent.Len() + 1 : Base.Len();
+	float Out = bHasExponent ? FMath::Pow(FCString::Atof(*Base), FCString::Atof(*Exponent)) : FCString::Atof(*Base);
+
+	return TTuple<FString, float>(Input.Right(Input.Len() - Len), Out);
 }
 
 TTuple<FString, FString> FMAPParser::Whitespace(const FString& Input, const bool bOneOrMore)
@@ -302,6 +319,8 @@ TTuple<FString, FMAPEntity> FMAPParser::MAPEntity(const FString& Input)
 			In3 = Ignore(In3);
 			Brushes.Add(Brush);
 			In2 = In3;
+
+			UE_LOG(LogMAP, Display, TEXT("MAPParser: Parsed brush"));
 		}
 		catch (const std::exception&)
 		{
@@ -326,6 +345,8 @@ TTuple<FString, FMAPMap> FMAPParser::MAPMap(const FString& Input)
 			In2 = Ignore(In2);
 			Entities.Add(Entity);
 			In1 = In2;
+
+			UE_LOG(LogMAP, Display, TEXT("MAPParser: Parsed entity"));
 		}
 		catch (const std::exception&)
 		{

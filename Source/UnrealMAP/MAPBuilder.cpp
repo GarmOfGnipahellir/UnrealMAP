@@ -6,6 +6,7 @@
 #include "MaterialDomain.h"
 #include "MeshDescription.h"
 #include "StaticMeshAttributes.h"
+#include "PhysicsEngine/BodySetup.h"
 
 FMAPVertexWinding::FMAPVertexWinding(
 	const FVector& InUAxis,
@@ -143,6 +144,8 @@ UStaticMesh* FMAPBuilder::BrushMesh(const FMAPBrush& Brush)
 	const TVertexInstanceAttributesRef<FVector3f> VertexInstanceNormals = Attributes.GetVertexInstanceNormals();
 	const TVertexInstanceAttributesRef<FVector2f> VertexInstanceUVs = Attributes.GetVertexInstanceUVs();
 
+
+	TArray<FPlane> Planes;
 	for (const FMAPFace& Face : Brush.Faces)
 	{
 		TArray<FMAPVertex> FaceVertices;
@@ -176,9 +179,15 @@ UStaticMesh* FMAPBuilder::BrushMesh(const FMAPBrush& Brush)
 		}
 
 		Desc->CreatePolygon(FPolygonGroupID(0), VertexInstanceIDs);
+		Planes.Add(FPlane(FaceNormal, Face.Plane.GetDistance()));
 	}
 
 	Mesh->CommitMeshDescription(0);
+
+	FKConvexElem ConvexElem;
+	ConvexElem.HullFromPlanes(Planes, {});
+	Mesh->CreateBodySetup();
+	Mesh->GetBodySetup()->AggGeom.ConvexElems.Add(ConvexElem);
 
 	Mesh->Build(false);
 

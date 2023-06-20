@@ -4,6 +4,7 @@
 #include "MAPComponent.h"
 
 #include "MAPBuilder.h"
+#include "MAPLog.h"
 #include "MAPParser.h"
 #include "Engine/StaticMeshActor.h"
 
@@ -40,13 +41,16 @@ void UMAPComponent::BuildMAP()
 	bLoaded = false;
 	for (const auto Actor : SpawnedActors)
 	{
+		if (!Actor) continue;
+
 		Actor->Destroy();
 	}
 	SpawnedActors.Reset();
 
 	IPlatformFile& FileManager = FPlatformFileManager::Get().GetPlatformFile();
 
-	const FString AbsolutePath = FPaths::ProjectDir() / SourceFile.FilePath;
+	FString AbsolutePath = FPaths::ProjectDir() / SourceFile.FilePath;
+	FPaths::NormalizeFilename(AbsolutePath);
 
 	FString FileContent;
 	if (!FileManager.FileExists(*AbsolutePath) || !FFileHelper::LoadFileToString(
@@ -55,7 +59,7 @@ void UMAPComponent::BuildMAP()
 		FFileHelper::EHashOptions::None
 	))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("MAPActor: Can't load '%s'"), *AbsolutePath);
+		UE_LOG(LogMAP, Warning, TEXT("MAPActor: Can't load '%s'"), *AbsolutePath);
 		return;
 	}
 
@@ -66,28 +70,59 @@ void UMAPComponent::BuildMAP()
 	}
 	catch (const std::exception&)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("MAPActor: Failed to load '%s'"), *AbsolutePath);
+		UE_LOG(LogMAP, Warning, TEXT("MAPActor: Failed to load '%s'"), *AbsolutePath);
 		return;
 	}
 
-	for (const FMAPEntity& Entity : MAPMap.Entities)
+	UE_LOG(LogMAP, Display, TEXT("MAPActor: Successfully loaded '%s'"), *AbsolutePath);
+
+	for (int i = 0; i < MAPMap.Entities.Num(); ++i)
 	{
-		for (const FMAPBrush& Brush : Entity.Brushes)
-		{
-			SpawnBrush(GetWorld(), Brush, GetOwner());
-		}
+		SpawnEntity(GetWorld(), MAPMap.Entities[i], i, GetOwner());
 	}
 }
 
-void UMAPComponent::SpawnBrush(UWorld* World, const FMAPBrush& Brush, AActor* Parent)
+void UMAPComponent::SpawnBrush(UWorld* World, const FMAPBrush& Brush, const int32 Index, AActor* Parent)
 {
 	UStaticMesh* Mesh = FMAPBuilder::BrushMesh(Brush);
 	AStaticMeshActor* BrushActor = World->SpawnActor<AStaticMeshActor>();
+	SpawnedActors.Add(BrushActor);
+#if WITH_EDITOR
+	BrushActor->SetActorLabel(FString::Printf(TEXT("Brush%d"), Index));
+#endif
+	BrushActor->SetMobility(EComponentMobility::Movable);
 	BrushActor->AttachToActor(Parent, FAttachmentTransformRules::KeepWorldTransform);
 	BrushActor->GetStaticMeshComponent()->SetStaticMesh(Mesh);
-	SpawnedActors.Add(BrushActor);
 }
 
-void UMAPComponent::SpawnEntity(UWorld* World, const FMAPEntity& Entity, AActor* Parent)
+void UMAPComponent::SpawnEntity(UWorld* World, const FMAPEntity& Entity, const int32 Index, AActor* Parent)
 {
+	AActor* EntityActor = World->SpawnActor<AActor>();
+	SpawnedActors.Add(EntityActor);
+#if WITH_EDITOR
+	EntityActor->SetActorLabel(FString::Printf(TEXT("Entity%d"), Index));
+#endif
+
+	USceneComponent* RootComponent = NewObject<USceneComponent>(
+		EntityActor,
+		GetDefaultSceneRootVariableName(),
+		RF_Transactional
+	);
+	RootComponent->Mobility = EComponentMobility::Movable;
+	RootComponent->bVisualizeComponent = false;
+
+	EntityActor->SetRootComponent(RootComponent);
+	EntityActor->AddInstanceComponent(RootComponent);
+
+	RootComponent->RegisterComponent();
+
+	if (Parent)
+	{
+		EntityActor->AttachToActor(Parent, FAttachmentTransformRules::KeepWorldTransform);
+	}
+
+	for (int i = 0; i < Entity.Brushes.Num(); ++i)
+	{
+		SpawnBrush(World, Entity.Brushes[i], i, EntityActor);
+	}
 }

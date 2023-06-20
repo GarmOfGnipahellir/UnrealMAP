@@ -29,8 +29,8 @@ public:
 
 	void BuildMAP();
 
-	void SpawnBrush(UWorld* World, const FMAPBrush& Brush, AActor* Parent = nullptr);
-	void SpawnEntity(UWorld* World, const FMAPEntity& Entity, AActor* Parent = nullptr);
+	void SpawnBrush(UWorld* World, const FMAPBrush& Brush, int32 Index, AActor* Parent = nullptr);
+	void SpawnEntity(UWorld* World, const FMAPEntity& Entity, int32 Index, AActor* Parent = nullptr);
 
 private:
 	UPROPERTY()
