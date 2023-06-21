@@ -21,8 +21,7 @@ public:
 
 	AMAPActor();
 
-	void SpawnBrush(UWorld* World, const FMAPBrush& Brush, AActor* Parent = nullptr);
-	void SpawnEntity(UWorld* World, const FMAPEntity& Entity, AActor* Parent = nullptr);
+	virtual void PostRegisterAllComponents() override;
 
 private:
 	TArray<TObjectPtr<AActor>> SpawnedActors;

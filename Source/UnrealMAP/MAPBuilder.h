@@ -51,6 +51,10 @@ public:
 
 	static void SortVertices(const FMAPFace& Face, TArray<FMAPVertex>& Vertices);
 
+#if WITH_EDITOR
+	static UTexture2D* LoadTextureEditor(const FString& FilePath, UObject* Outer);
+#endif
+	static UTexture2D* LoadTextureRuntime(const FString& FilePath);
 	static UTexture2D* FaceTexture(const FMAPFace& Face, const FMAPConfig& Data, UMAPCache* Cache);
 	static UStaticMesh* BrushMesh(const FMAPBrush& Brush, const FMAPConfig& Data, UMAPCache* Cache);
 };

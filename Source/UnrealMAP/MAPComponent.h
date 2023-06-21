@@ -18,23 +18,27 @@ public:
 	UPROPERTY(Category="MAP", EditAnywhere, meta=(FilePathFilter="MAP files (*.map)|*.map", RelativeToGameDir))
 	FFilePath SourceFile;
 
+	UPROPERTY(Category="MAP", VisibleAnywhere)
+	FString SourceHash;
+
 	UPROPERTY(Category="MAP", EditAnywhere)
 	FMAPConfig Data;
 
 	UPROPERTY(Category="MAP", VisibleAnywhere)
 	TObjectPtr<UMAPCache> Cache;
 
-	FMAPMap Map;
+	UPROPERTY()
 	bool bLoaded = false;
+	
+	FMAPMap Map;
 
 	UMAPComponent();
-
-#if WITH_EDITORONLY_DATA
-	virtual void PostLoad() override;
-#endif
+	
 	virtual void PostInitProperties() override;
 	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
 
+	FString GetAbsoluteSourceFile() const;
+	bool ShouldBuild() const;
 	void BuildMAP();
 
 	void SpawnBrush(UWorld* World, const FMAPBrush& Brush, int32 Index, AActor* Parent = nullptr);

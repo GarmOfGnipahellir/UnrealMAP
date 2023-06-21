@@ -8,21 +8,12 @@
 #include "MAPLog.h"
 #include "MAPParser.h"
 #include "Engine/StaticMeshActor.h"
+#include "Misc/FileHelper.h"
 
 
 UMAPComponent::UMAPComponent()
 {
-	Cache = CreateDefaultSubobject<UMAPCache>(TEXT("Cache"));
 }
-
-#if WITH_EDITORONLY_DATA
-void UMAPComponent::PostLoad()
-{
-	Super::PostLoad();
-
-	BuildMAP();
-}
-#endif
 
 void UMAPComponent::PostInitProperties()
 {
@@ -38,8 +29,24 @@ void UMAPComponent::PostEditChangeProperty(FPropertyChangedEvent& PropertyChange
 	BuildMAP();
 }
 
+FString UMAPComponent::GetAbsoluteSourceFile() const
+{
+	FString AbsolutePath = FPaths::ProjectDir() / SourceFile.FilePath;
+	FPaths::NormalizeFilename(AbsolutePath);
+	return AbsolutePath;
+}
+
+bool UMAPComponent::ShouldBuild() const
+{
+	const FString AbsolutePath = GetAbsoluteSourceFile();
+	const FString CurrentHash = LexToString(FMD5Hash::HashFile(*AbsolutePath));
+	return SourceHash != CurrentHash;
+}
+
 void UMAPComponent::BuildMAP()
 {
+	const FString AbsolutePath = GetAbsoluteSourceFile();
+
 	bLoaded = false;
 	for (const auto Actor : SpawnedActors)
 	{
@@ -48,12 +55,9 @@ void UMAPComponent::BuildMAP()
 		Actor->Destroy();
 	}
 	SpawnedActors.Reset();
+	Cache = NewObject<UMAPCache>(this);
 
 	IPlatformFile& FileManager = FPlatformFileManager::Get().GetPlatformFile();
-
-	FString AbsolutePath = FPaths::ProjectDir() / SourceFile.FilePath;
-	FPaths::NormalizeFilename(AbsolutePath);
-
 	FString FileContent;
 	if (!FileManager.FileExists(*AbsolutePath) || !FFileHelper::LoadFileToString(
 		FileContent,
@@ -82,6 +86,8 @@ void UMAPComponent::BuildMAP()
 	{
 		SpawnEntity(GetWorld(), Map.Entities[i], i, GetOwner());
 	}
+
+	SourceHash = LexToString(FMD5Hash::HashFile(*AbsolutePath));
 }
 
 void UMAPComponent::SpawnBrush(UWorld* World, const FMAPBrush& Brush, const int32 Index, AActor* Parent)

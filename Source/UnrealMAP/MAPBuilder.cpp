@@ -6,10 +6,16 @@
 #include "ImageUtils.h"
 #include "MAPCache.h"
 #include "MAPConfig.h"
+#include "MAPLog.h"
 #include "MaterialDomain.h"
 #include "MeshDescription.h"
 #include "StaticMeshAttributes.h"
+#include "Materials/MaterialInstanceDynamic.h"
 #include "PhysicsEngine/BodySetup.h"
+
+#if WITH_EDITOR
+#include "Factories/TextureFactory.h"
+#endif
 
 FMAPVertexWinding::FMAPVertexWinding(
 	const FVector& InUAxis,
@@ -95,6 +101,10 @@ bool FMAPBuilder::FaceVertex(
 	{
 		UV /= FVector2d(Texture->GetSizeX(), Texture->GetSizeY());
 	}
+	else
+	{
+		UE_LOG(LogMAP, Warning, TEXT("Texture %s is NULL"), *Face.Texture)
+	}
 
 	OutVertex = FMAPVertex{Position, UV};
 	return true;
@@ -140,6 +150,32 @@ void FMAPBuilder::SortVertices(const FMAPFace& Face, TArray<FMAPVertex>& Vertice
 	Vertices.Sort(FMAPVertexWinding(UAxis, VAxis, Center));
 }
 
+#if WITH_EDITOR
+UTexture2D* FMAPBuilder::LoadTextureEditor(const FString& FilePath, UObject* Outer)
+{
+	UTextureFactory* TextureFactory = NewObject<UTextureFactory>();
+	TextureFactory->SuppressImportOverwriteDialog();
+	bool bOperationCanceled = false;
+	return static_cast<UTexture2D*>(
+		TextureFactory->FactoryCreateFile(
+			UTexture2D::StaticClass(),
+			Outer,
+			NAME_None,
+			RF_NoFlags,
+			*FilePath,
+			nullptr,
+			nullptr,
+			bOperationCanceled
+		)
+	);
+}
+#endif
+
+UTexture2D* FMAPBuilder::LoadTextureRuntime(const FString& FilePath)
+{
+	return FImageUtils::ImportFileAsTexture2D(FilePath);
+}
+
 UTexture2D* FMAPBuilder::FaceTexture(const FMAPFace& Face, const FMAPConfig& Data, UMAPCache* Cache)
 {
 	if (const auto Texture = Cache->Textures.Find(Face.Texture))
@@ -148,7 +184,11 @@ UTexture2D* FMAPBuilder::FaceTexture(const FMAPFace& Face, const FMAPConfig& Dat
 	}
 
 	const FString AbsolutePath = Data.TextureRoot.Path / Face.Texture + ".png";
-	UTexture2D* Texture = FImageUtils::ImportFileAsTexture2D(AbsolutePath);
+#if WITH_EDITOR
+	UTexture2D* Texture = LoadTextureEditor(AbsolutePath, Cache);
+#else
+	UTexture2D* Texture = LoadTextureRuntime(AbsolutePath);
+#endif
 	if (!Texture) return nullptr;
 
 	Cache->Textures.Add(Face.Texture, Texture);
@@ -157,7 +197,7 @@ UTexture2D* FMAPBuilder::FaceTexture(const FMAPFace& Face, const FMAPConfig& Dat
 
 UStaticMesh* FMAPBuilder::BrushMesh(const FMAPBrush& Brush, const FMAPConfig& Data, UMAPCache* Cache)
 {
-	UStaticMesh* Mesh = NewObject<UStaticMesh>();
+	UStaticMesh* Mesh = NewObject<UStaticMesh>(Cache);
 	Mesh->GetStaticMaterials().Add(UMaterial::GetDefaultMaterial(MD_Surface));
 	Mesh->AddSourceModel();
 	FMeshDescription* Desc = Mesh->CreateMeshDescription(0);

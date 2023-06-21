@@ -13,3 +13,10 @@ AMAPActor::AMAPActor()
 	MAPComponent = CreateDefaultSubobject<UMAPComponent>(TEXT("MAPComponent0"));
 	RootComponent = MAPComponent;
 }
+
+void AMAPActor::PostRegisterAllComponents()
+{
+	Super::PostRegisterAllComponents();
+
+	MAPComponent->BuildMAP();
+}
