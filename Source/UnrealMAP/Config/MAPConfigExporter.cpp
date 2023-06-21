@@ -19,16 +19,15 @@ UMAPConfigExporter::UMAPConfigExporter() : UExporter()
 }
 
 bool UMAPConfigExporter::ExportBinary(
-		UObject* Object,
-		const TCHAR* Type,
-		FArchive& Ar,
-		FFeedbackContext* Warn,
-		int32 FileIndex,
-		uint32 PortFlags)
+	UObject* Object,
+	const TCHAR* Type,
+	FArchive& Ar,
+	FFeedbackContext* Warn,
+	int32 FileIndex,
+	uint32 PortFlags)
 {
 	const FString FilePath = GetFilePath();
-	const FString FileName = FPaths::GetCleanFilename(FilePath);
-	const FString DirPath = FPaths::GetPath(FilePath);
+	const FString OutputDir = FPaths::GetPath(FilePath);
 
 	const UMAPConfig* Config = Cast<UMAPConfig>(Object);
 	if (!Config)
@@ -37,8 +36,36 @@ bool UMAPConfigExporter::ExportBinary(
 		return false;
 	}
 
+	if (!ExportGameConfig(Config, OutputDir))
+	{
+		UE_LOG(LogMAP, Error, TEXT("MAPConfigExporter: Failed to export GameConfig."))
+		return false;
+	}
+
+	if (!ExportGameEngineProfiles(OutputDir))
+	{
+		UE_LOG(LogMAP, Error, TEXT("MAPConfigExporter: Failed to export GameEngineProfiles."))
+		return false;
+	}
+
+	return true;
+}
+
+bool UMAPConfigExporter::ExportGameConfig(const UMAPConfig* Config, const FString& OutputDir) const
+{
+	const FString ProjectName = FApp::GetProjectName();
+	
 	FJsonDomBuilder::FObject GameConfig;
-	GameConfig.Set("version", 4);
+	GameConfig.Set("version", 5);
+	GameConfig.Set("name", ProjectName);
+
+	FJsonDomBuilder::FArray FileFormats;
+	FileFormats.Add(
+		FJsonDomBuilder::FObject()
+		.Set("format", "Valve")
+		.Set("initialmap", "initial_valve.map")
+	);
+	GameConfig.Set("fileformats", FileFormats);
 
 	FJsonDomBuilder::FObject FileSystem;
 	FileSystem.Set("searchpath", ".");
@@ -81,9 +108,47 @@ bool UMAPConfigExporter::ExportBinary(
 	FaceAttribs.Set("contentflags", FJsonDomBuilder::FArray());
 	GameConfig.Set("faceattribs", FaceAttribs);
 
-	if (!FFileHelper::SaveStringToFile(GameConfig.ToString(), *(DirPath / "GameConfig.cfg")))
+	const FString FilePath = OutputDir / "GameConfig.cfg";
+	if (!FFileHelper::SaveStringToFile(GameConfig.ToString(), *FilePath))
 	{
-		UE_LOG(LogMAP, Error, TEXT("MAPConfigExporter: Failed to save file '%s'."), *(DirPath / "GameConfig.cfg"))
+		UE_LOG(LogMAP, Error, TEXT("MAPConfigExporter: Failed to save file '%s'."), *FilePath)
+		return false;
+	}
+
+	return true;
+}
+
+bool UMAPConfigExporter::ExportGameEngineProfiles(const FString& OutputDir) const
+{
+	const FString ProjectName = FApp::GetProjectName();
+	const FString ProjectFilePath = FPaths::GetProjectFilePath();
+	FString EditorBinaryPath;
+#if WITH_EDITOR
+	EditorBinaryPath = FUnrealEdMisc::Get().GetProjectEditorBinaryPath();
+#else
+	UE_LOG(LogMAP, Warning, TEXT("MAPConfigExporter: Can't get editor binary path in non editor build."), *FilePath)
+#endif
+
+	FStringFormatNamedArguments Args;
+	Args.Add(TEXT("ProjectFile"), ProjectFilePath);
+	const FString Parameters = FString::Format(TEXT("{ProjectFile}"), Args);
+
+	FJsonDomBuilder::FObject GameEngineProfiles;
+	GameEngineProfiles.Set("version", 1);
+
+	FJsonDomBuilder::FArray Profiles;
+	Profiles.Add(
+		FJsonDomBuilder::FObject()
+		.Set("name", ProjectName)
+		.Set("parameters", Parameters)
+		.Set("path", EditorBinaryPath)
+	);
+	GameEngineProfiles.Set("profiles", Profiles);
+
+	const FString FilePath = OutputDir / "GameEngineProfiles.cfg";
+	if (!FFileHelper::SaveStringToFile(GameEngineProfiles.ToString(), *FilePath))
+	{
+		UE_LOG(LogMAP, Error, TEXT("MAPConfigExporter: Failed to save file '%s'."), *FilePath)
 		return false;
 	}
 

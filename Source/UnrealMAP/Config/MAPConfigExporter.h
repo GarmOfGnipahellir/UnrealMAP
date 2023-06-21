@@ -6,6 +6,8 @@
 #include "Exporters/Exporter.h"
 #include "MAPConfigExporter.generated.h"
 
+class UMAPConfig;
+
 UCLASS()
 class UNREALMAP_API UMAPConfigExporter : public UExporter
 {
@@ -21,6 +23,9 @@ public:
 		FFeedbackContext* Warn,
 		int32 FileIndex = 0,
 		uint32 PortFlags = 0) override;
+
+	bool ExportGameConfig(const UMAPConfig* Config, const FString& OutputDir) const;
+	bool ExportGameEngineProfiles(const FString& OutputDir) const;
 
 protected:
 	FString GetFilePath() const;
