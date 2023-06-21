@@ -5,6 +5,9 @@
 #include "CoreMinimal.h"
 #include "MAPModel.h"
 
+struct FMAPConfig;
+class UMAPCache;
+
 struct FMAPVertex
 {
 	FVector Position;
@@ -38,6 +41,7 @@ public:
 
 	static bool FaceVertex(
 		const FMAPFace& Face,
+		UTexture2D* Texture,
 		const FMAPPlane& Plane1,
 		const FMAPPlane& Plane2,
 		const FMAPBrush& Brush,
@@ -47,5 +51,6 @@ public:
 
 	static void SortVertices(const FMAPFace& Face, TArray<FMAPVertex>& Vertices);
 
-	static UStaticMesh* BrushMesh(const FMAPBrush& Brush);
+	static UTexture2D* FaceTexture(const FMAPFace& Face, const FMAPConfig& Data, UMAPCache* Cache);
+	static UStaticMesh* BrushMesh(const FMAPBrush& Brush, const FMAPConfig& Data, UMAPCache* Cache);
 };

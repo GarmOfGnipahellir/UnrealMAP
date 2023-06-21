@@ -3,9 +3,11 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "MAPConfig.h"
 #include "MAPModel.h"
 #include "MAPComponent.generated.h"
 
+class UMAPCache;
 
 UCLASS(ClassGroup=(MAP), meta=(BlueprintSpawnableComponent))
 class UNREALMAP_API UMAPComponent : public USceneComponent
@@ -16,7 +18,13 @@ public:
 	UPROPERTY(Category="MAP", EditAnywhere, meta=(FilePathFilter="MAP files (*.map)|*.map", RelativeToGameDir))
 	FFilePath SourceFile;
 
-	FMAPMap MAPMap;
+	UPROPERTY(Category="MAP", EditAnywhere)
+	FMAPConfig Data;
+
+	UPROPERTY(Category="MAP", VisibleAnywhere)
+	TObjectPtr<UMAPCache> Cache;
+
+	FMAPMap Map;
 	bool bLoaded = false;
 
 	UMAPComponent();

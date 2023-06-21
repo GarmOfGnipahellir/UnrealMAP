@@ -18,7 +18,7 @@ void FMAPComponentVisualizer::DrawVisualization(
 	if (!ensure(MAPComponent)) return;
 	if (!MAPComponent->bLoaded) return;
 
-	for (const FMAPEntity& Entity : MAPComponent->MAPMap.Entities)
+	for (const FMAPEntity& Entity : MAPComponent->Map.Entities)
 	{
 		for (const FMAPBrush& Brush : Entity.Brushes)
 		{
@@ -33,7 +33,7 @@ void FMAPComponentVisualizer::DrawVisualization(
 					for (const FMAPFace& Face2 : Brush.Faces)
 					{
 						FMAPVertex Vertex;
-						if (FMAPBuilder::FaceVertex(Face, Face1.Plane, Face2.Plane, Brush, Vertex))
+						if (FMAPBuilder::FaceVertex(Face, nullptr, Face1.Plane, Face2.Plane, Brush, Vertex))
 						{
 							FaceVertices.Add(Vertex);
 							const FVector VertexLocation = MAPComponent->GetComponentTransform().TransformPosition(

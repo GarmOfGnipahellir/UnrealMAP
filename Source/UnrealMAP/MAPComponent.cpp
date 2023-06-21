@@ -4,6 +4,7 @@
 #include "MAPComponent.h"
 
 #include "MAPBuilder.h"
+#include "MAPCache.h"
 #include "MAPLog.h"
 #include "MAPParser.h"
 #include "Engine/StaticMeshActor.h"
@@ -11,6 +12,7 @@
 
 UMAPComponent::UMAPComponent()
 {
+	Cache = CreateDefaultSubobject<UMAPCache>(TEXT("Cache"));
 }
 
 #if WITH_EDITORONLY_DATA
@@ -65,7 +67,7 @@ void UMAPComponent::BuildMAP()
 
 	try
 	{
-		MAPMap = FMAPParser::MAPMap(FileContent).Value;
+		Map = FMAPParser::MAPMap(FileContent).Value;
 		bLoaded = true;
 	}
 	catch (const std::exception&)
@@ -76,15 +78,15 @@ void UMAPComponent::BuildMAP()
 
 	UE_LOG(LogMAP, Display, TEXT("MAPActor: Successfully loaded '%s'"), *AbsolutePath);
 
-	for (int i = 0; i < MAPMap.Entities.Num(); ++i)
+	for (int i = 0; i < Map.Entities.Num(); ++i)
 	{
-		SpawnEntity(GetWorld(), MAPMap.Entities[i], i, GetOwner());
+		SpawnEntity(GetWorld(), Map.Entities[i], i, GetOwner());
 	}
 }
 
 void UMAPComponent::SpawnBrush(UWorld* World, const FMAPBrush& Brush, const int32 Index, AActor* Parent)
 {
-	UStaticMesh* Mesh = FMAPBuilder::BrushMesh(Brush);
+	UStaticMesh* Mesh = FMAPBuilder::BrushMesh(Brush, Data, Cache);
 	AStaticMeshActor* BrushActor = World->SpawnActor<AStaticMeshActor>();
 	SpawnedActors.Add(BrushActor);
 #if WITH_EDITOR
