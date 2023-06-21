@@ -3,10 +3,10 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "MAPConfig.generated.h"
+#include "MAPData.generated.h"
 
 USTRUCT(BlueprintType)
-struct UNREALMAP_API FMAPConfig
+struct UNREALMAP_API FMAPData
 {
 	GENERATED_BODY()
 

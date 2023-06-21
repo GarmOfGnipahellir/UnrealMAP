@@ -5,6 +5,7 @@
 
 #include "MAPBuilder.h"
 #include "MAPCache.h"
+#include "MAPGlobals.h"
 #include "MAPLog.h"
 #include "MAPParser.h"
 #include "Engine/StaticMeshActor.h"
@@ -13,6 +14,7 @@
 
 UMAPComponent::UMAPComponent()
 {
+	Config = UMAPGlobals::GetDefaultConfig();
 }
 
 void UMAPComponent::PostInitProperties()

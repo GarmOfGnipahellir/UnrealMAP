@@ -5,7 +5,7 @@
 
 #include "ImageUtils.h"
 #include "MAPCache.h"
-#include "MAPConfig.h"
+#include "MAPData.h"
 #include "MAPLog.h"
 #include "MaterialDomain.h"
 #include "MeshDescription.h"
@@ -103,7 +103,7 @@ bool FMAPBuilder::FaceVertex(
 	}
 	else
 	{
-		UE_LOG(LogMAP, Warning, TEXT("Texture %s is NULL"), *Face.Texture)
+		// UE_LOG(LogMAP, Warning, TEXT("Texture %s is NULL"), *Face.Texture)
 	}
 
 	OutVertex = FMAPVertex{Position, UV};
@@ -176,7 +176,7 @@ UTexture2D* FMAPBuilder::LoadTextureRuntime(const FString& FilePath)
 	return FImageUtils::ImportFileAsTexture2D(FilePath);
 }
 
-UTexture2D* FMAPBuilder::FaceTexture(const FMAPFace& Face, const FMAPConfig& Data, UMAPCache* Cache)
+UTexture2D* FMAPBuilder::FaceTexture(const FMAPFace& Face, const FMAPData& Data, UMAPCache* Cache)
 {
 	if (const auto Texture = Cache->Textures.Find(Face.Texture))
 	{
@@ -195,7 +195,7 @@ UTexture2D* FMAPBuilder::FaceTexture(const FMAPFace& Face, const FMAPConfig& Dat
 	return Texture;
 }
 
-UStaticMesh* FMAPBuilder::BrushMesh(const FMAPBrush& Brush, const FMAPConfig& Data, UMAPCache* Cache)
+UStaticMesh* FMAPBuilder::BrushMesh(const FMAPBrush& Brush, const FMAPData& Data, UMAPCache* Cache)
 {
 	UStaticMesh* Mesh = NewObject<UStaticMesh>(Cache);
 	Mesh->GetStaticMaterials().Add(UMaterial::GetDefaultMaterial(MD_Surface));

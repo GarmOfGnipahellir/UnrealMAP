@@ -6,15 +6,14 @@
 #include "UObject/Object.h"
 #include "MAPSettings.generated.h"
 
-/**
- * 
- */
+class UMAPConfig;
+
 UCLASS(Config="UnrealMAP")
 class UNREALMAP_API UMAPSettings : public UObject
 {
 	GENERATED_BODY()
 
 public:
-	UPROPERTY(Category="Textures", Config, EditAnywhere, meta=(ContentDir))
-	TArray<FDirectoryPath> TextureSources;
+	UPROPERTY(Category="Textures", Config, EditAnywhere)
+	TSoftObjectPtr<UMAPConfig> DefaultConfig;
 };

@@ -3,8 +3,9 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "MAPConfig.h"
+#include "MAPData.h"
 #include "MAPModel.h"
+#include "Config/MAPConfig.h"
 #include "MAPComponent.generated.h"
 
 class UMAPCache;
@@ -22,7 +23,10 @@ public:
 	FString SourceHash;
 
 	UPROPERTY(Category="MAP", EditAnywhere)
-	FMAPConfig Data;
+	TObjectPtr<UMAPConfig> Config;
+
+	UPROPERTY(Category="MAP", EditAnywhere)
+	FMAPData Data;
 
 	UPROPERTY(Category="MAP", VisibleAnywhere)
 	TObjectPtr<UMAPCache> Cache;

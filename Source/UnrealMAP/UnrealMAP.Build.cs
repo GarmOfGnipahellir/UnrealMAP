@@ -43,6 +43,8 @@ public class UnrealMAP : ModuleRules
 				"RenderCore",
 				"MeshDescription",
 				"StaticMeshDescription",
+				"Json",
+				"JsonUtilities",
 				// ... add private dependencies that you statically link with here ...	
 			}
 		);

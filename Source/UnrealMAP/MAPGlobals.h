@@ -6,14 +6,15 @@
 #include "UObject/Object.h"
 #include "MAPGlobals.generated.h"
 
-/**
- * 
- */
+class UMAPConfig;
+
 UCLASS()
 class UNREALMAP_API UMAPGlobals : public UObject
 {
 	GENERATED_BODY()
 
 public:
+	static UMAPConfig* GetDefaultConfig();
+	
 	static bool ExportTrenchBroomConfig();
 };
