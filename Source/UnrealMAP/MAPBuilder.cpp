@@ -10,6 +10,8 @@
 #include "MaterialDomain.h"
 #include "MeshDescription.h"
 #include "StaticMeshAttributes.h"
+#include "Config/MAPConfig.h"
+#include "EditorFramework/AssetImportData.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "PhysicsEngine/BodySetup.h"
 
@@ -103,7 +105,7 @@ bool FMAPBuilder::FaceVertex(
 	}
 	else
 	{
-		// UE_LOG(LogMAP, Warning, TEXT("Texture %s is NULL"), *Face.Texture)
+		UV /= FVector2d(128, 128);
 	}
 
 	OutVertex = FMAPVertex{Position, UV};
@@ -153,17 +155,17 @@ void FMAPBuilder::SortVertices(const FMAPFace& Face, TArray<FMAPVertex>& Vertice
 #if WITH_EDITOR
 UTexture2D* FMAPBuilder::LoadTextureEditor(const FString& FilePath, UObject* Outer)
 {
+	FName Name = FName(FPaths::GetBaseFilename(FilePath));
 	UTextureFactory* TextureFactory = NewObject<UTextureFactory>();
 	TextureFactory->SuppressImportOverwriteDialog();
 	bool bOperationCanceled = false;
-	return static_cast<UTexture2D*>(
-		TextureFactory->FactoryCreateFile(
+	return Cast<UTexture2D>(
+		TextureFactory->ImportObject(
 			UTexture2D::StaticClass(),
 			Outer,
-			NAME_None,
-			RF_NoFlags,
+			Name,
+			RF_Transactional,
 			*FilePath,
-			nullptr,
 			nullptr,
 			bOperationCanceled
 		)
@@ -176,26 +178,37 @@ UTexture2D* FMAPBuilder::LoadTextureRuntime(const FString& FilePath)
 	return FImageUtils::ImportFileAsTexture2D(FilePath);
 }
 
-UTexture2D* FMAPBuilder::FaceTexture(const FMAPFace& Face, const FMAPData& Data, UMAPCache* Cache)
+UTexture2D* FMAPBuilder::FaceTexture(const FMAPFace& Face, UMAPConfig* Config, UMAPCache* Cache)
 {
 	if (const auto Texture = Cache->Textures.Find(Face.Texture))
 	{
 		return *Texture;
 	}
 
-	const FString AbsolutePath = Data.TextureRoot.Path / Face.Texture + ".png";
+	const FString AbsolutePath = FPaths::ProjectDir() / Config->GetTextureRootPlatform() / Face.Texture + ".png";
 #if WITH_EDITOR
-	UTexture2D* Texture = LoadTextureEditor(AbsolutePath, Cache);
+	UTexture2D* Texture = LoadTextureRuntime(AbsolutePath);
+	// TODO: Doesn't work like the runtime version, GetSizeX/Y seems to be wrong
+	// UTexture2D* Texture = LoadTextureEditor(AbsolutePath, Cache);
 #else
 	UTexture2D* Texture = LoadTextureRuntime(AbsolutePath);
 #endif
 	if (!Texture) return nullptr;
 
+	Texture->PreEditChange(nullptr);
+	Texture->SRGB = true;
+	Texture->CompressionNone = false;
+	Texture->CompressionSettings = TC_BC7;
+	Texture->MipGenSettings = TMGS_FromTextureGroup;
+	Texture->Filter = TF_Nearest;
+	Texture->AssetImportData->Update(AbsolutePath);
+	Texture->PostEditChange();
+
 	Cache->Textures.Add(Face.Texture, Texture);
 	return Texture;
 }
 
-UStaticMesh* FMAPBuilder::BrushMesh(const FMAPBrush& Brush, const FMAPData& Data, UMAPCache* Cache)
+UStaticMesh* FMAPBuilder::BrushMesh(const FMAPBrush& Brush, UMAPConfig* Config, UMAPCache* Cache)
 {
 	UStaticMesh* Mesh = NewObject<UStaticMesh>(Cache);
 	Mesh->GetStaticMaterials().Add(UMaterial::GetDefaultMaterial(MD_Surface));
@@ -213,12 +226,13 @@ UStaticMesh* FMAPBuilder::BrushMesh(const FMAPBrush& Brush, const FMAPData& Data
 	{
 		TArray<FMAPVertex> FaceVertices;
 
-		UTexture2D* Texture = FaceTexture(Face, Data, Cache);
+		UTexture2D* Texture = FaceTexture(Face, Config, Cache);
+		// TODO: Cache materials
 		UMaterialInterface* Material;
-		if (Data.DefaultMaterial)
+		if (Config->DefaultMaterial && Texture)
 		{
 			UMaterialInstanceDynamic* MID = UMaterialInstanceDynamic::Create(
-				Data.DefaultMaterial,
+				Config->DefaultMaterial,
 				GetTransientPackage()
 			);
 			MID->SetTextureParameterValue("BaseColor", Texture);

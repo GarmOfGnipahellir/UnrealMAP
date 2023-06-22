@@ -45,6 +45,7 @@ bool UMAPComponent::ShouldBuild() const
 	return SourceHash != CurrentHash;
 }
 
+// TODO: Rebuild on file changes
 void UMAPComponent::BuildMAP()
 {
 	const FString AbsolutePath = GetAbsoluteSourceFile();
@@ -88,20 +89,21 @@ void UMAPComponent::BuildMAP()
 	{
 		SpawnEntity(GetWorld(), Map.Entities[i], i, GetOwner());
 	}
+	SetWorldScale3D(FVector(-1, 1, 1) * 3.125);
 
 	SourceHash = LexToString(FMD5Hash::HashFile(*AbsolutePath));
 }
 
 void UMAPComponent::SpawnBrush(UWorld* World, const FMAPBrush& Brush, const int32 Index, AActor* Parent)
 {
-	UStaticMesh* Mesh = FMAPBuilder::BrushMesh(Brush, Data, Cache);
+	UStaticMesh* Mesh = FMAPBuilder::BrushMesh(Brush, Config, Cache);
 	AStaticMeshActor* BrushActor = World->SpawnActor<AStaticMeshActor>();
 	SpawnedActors.Add(BrushActor);
 #if WITH_EDITOR
 	BrushActor->SetActorLabel(FString::Printf(TEXT("Brush%d"), Index));
 #endif
 	BrushActor->SetMobility(EComponentMobility::Movable);
-	BrushActor->AttachToActor(Parent, FAttachmentTransformRules::KeepWorldTransform);
+	BrushActor->AttachToActor(Parent, FAttachmentTransformRules::SnapToTargetIncludingScale);
 	BrushActor->GetStaticMeshComponent()->SetStaticMesh(Mesh);
 }
 
@@ -128,7 +130,7 @@ void UMAPComponent::SpawnEntity(UWorld* World, const FMAPEntity& Entity, const i
 
 	if (Parent)
 	{
-		EntityActor->AttachToActor(Parent, FAttachmentTransformRules::KeepWorldTransform);
+		EntityActor->AttachToActor(Parent, FAttachmentTransformRules::SnapToTargetIncludingScale);
 	}
 
 	for (int i = 0; i < Entity.Brushes.Num(); ++i)

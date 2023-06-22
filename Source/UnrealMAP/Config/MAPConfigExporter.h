@@ -26,6 +26,7 @@ public:
 
 	bool ExportGameConfig(const UMAPConfig* Config, const FString& OutputDir) const;
 	bool ExportGameEngineProfiles(const FString& OutputDir) const;
+	bool ExportEntitiesDefinition(const FString& OutputDir) const;
 
 protected:
 	FString GetFilePath() const;

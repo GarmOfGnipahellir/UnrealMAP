@@ -5,8 +5,8 @@
 #include "CoreMinimal.h"
 #include "MAPModel.h"
 
-struct FMAPData;
 class UMAPCache;
+class UMAPConfig;
 
 struct FMAPVertex
 {
@@ -55,6 +55,6 @@ public:
 	static UTexture2D* LoadTextureEditor(const FString& FilePath, UObject* Outer);
 #endif
 	static UTexture2D* LoadTextureRuntime(const FString& FilePath);
-	static UTexture2D* FaceTexture(const FMAPFace& Face, const FMAPData& Data, UMAPCache* Cache);
-	static UStaticMesh* BrushMesh(const FMAPBrush& Brush, const FMAPData& Data, UMAPCache* Cache);
+	static UTexture2D* FaceTexture(const FMAPFace& Face, UMAPConfig* Config, UMAPCache* Cache);
+	static UStaticMesh* BrushMesh(const FMAPBrush& Brush, UMAPConfig* Config, UMAPCache* Cache);
 };

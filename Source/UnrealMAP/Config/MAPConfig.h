@@ -11,15 +11,13 @@ class UNREALMAP_API UMAPConfig : public UDataAsset
 	GENERATED_BODY()
 
 public:
-	UPROPERTY(Category="Textures", EditAnywhere, meta=(ContentDir))
+	UPROPERTY(Category="MAPConfig", EditAnywhere, meta=(ContentDir))
 	FDirectoryPath TextureRoot;
 
-	UFUNCTION(Category="Export", CallInEditor)
-	void Export();
+	UPROPERTY(Category="MAPConfig", EditAnywhere)
+	TObjectPtr<UMaterialInterface> DefaultMaterial;
 
 	FString GetTextureRootPlatform() const;
-
-	bool ExportForTrenchBroom(const FString& OutputDir) const;
 
 	virtual FName GetExporterName() override;
 };

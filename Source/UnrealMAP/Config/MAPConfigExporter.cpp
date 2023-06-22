@@ -48,13 +48,19 @@ bool UMAPConfigExporter::ExportBinary(
 		return false;
 	}
 
+	if (!ExportEntitiesDefinition(OutputDir))
+	{
+		UE_LOG(LogMAP, Error, TEXT("MAPConfigExporter: Failed to export EntitiesDefinition."))
+		return false;
+	}
+
 	return true;
 }
 
 bool UMAPConfigExporter::ExportGameConfig(const UMAPConfig* Config, const FString& OutputDir) const
 {
 	const FString ProjectName = FApp::GetProjectName();
-	
+
 	FJsonDomBuilder::FObject GameConfig;
 	GameConfig.Set("version", 5);
 	GameConfig.Set("name", ProjectName);
@@ -82,7 +88,7 @@ bool UMAPConfigExporter::ExportGameConfig(const UMAPConfig* Config, const FStrin
 		"package",
 		FJsonDomBuilder::FObject()
 		.Set("type", "directory")
-		.Set("root", Config->TextureRoot.Path)
+		.Set("root", Config->GetTextureRootPlatform())
 	);
 	Textures.Set(
 		"format",
@@ -94,7 +100,11 @@ bool UMAPConfigExporter::ExportGameConfig(const UMAPConfig* Config, const FStrin
 	GameConfig.Set("textures", Textures);
 
 	FJsonDomBuilder::FObject Entities;
-	Entities.Set("definitions", FJsonDomBuilder::FArray());
+	Entities.Set(
+		"definitions",
+		FJsonDomBuilder::FArray()
+		.Add(FString("Entities.fgd"))
+	);
 	Entities.Set("defaultcolor", "0.6 0.6 0.6 1.0");
 	GameConfig.Set("entities", Entities);
 
@@ -121,7 +131,7 @@ bool UMAPConfigExporter::ExportGameConfig(const UMAPConfig* Config, const FStrin
 bool UMAPConfigExporter::ExportGameEngineProfiles(const FString& OutputDir) const
 {
 	const FString ProjectName = FApp::GetProjectName();
-	const FString ProjectFilePath = FPaths::GetProjectFilePath();
+	const FString ProjectFilePath = FPaths::ConvertRelativePathToFull(FPaths::GetProjectFilePath());
 	FString EditorBinaryPath;
 #if WITH_EDITOR
 	EditorBinaryPath = FUnrealEdMisc::Get().GetProjectEditorBinaryPath();
@@ -152,6 +162,17 @@ bool UMAPConfigExporter::ExportGameEngineProfiles(const FString& OutputDir) cons
 		return false;
 	}
 
+	return true;
+}
+
+bool UMAPConfigExporter::ExportEntitiesDefinition(const FString& OutputDir) const
+{
+	const FString FilePath = OutputDir / "Entities.fgd";
+	if (!FFileHelper::SaveStringToFile(TEXT(""), *FilePath))
+	{
+		UE_LOG(LogMAP, Error, TEXT("MAPConfigExporter: Failed to save file '%s'."), *FilePath)
+		return false;
+	}
 	return true;
 }
 
