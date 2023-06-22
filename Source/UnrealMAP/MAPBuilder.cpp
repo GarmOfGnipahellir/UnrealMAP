@@ -10,6 +10,7 @@
 #include "MaterialDomain.h"
 #include "MeshDescription.h"
 #include "StaticMeshAttributes.h"
+#include "AssetRegistry/IAssetRegistry.h"
 #include "Config/MAPConfig.h"
 #include "EditorFramework/AssetImportData.h"
 #include "Materials/MaterialInstanceDynamic.h"
@@ -178,21 +179,16 @@ UTexture2D* FMAPBuilder::LoadTextureRuntime(const FString& FilePath)
 	return FImageUtils::ImportFileAsTexture2D(FilePath);
 }
 
-UTexture2D* FMAPBuilder::FaceTexture(const FMAPFace& Face, UMAPConfig* Config, UMAPCache* Cache)
+UTexture2D* FMAPBuilder::FaceTexture(const FMAPFace& Face, const UMAPConfig* Config, UMAPCache* Cache)
 {
 	if (const auto Texture = Cache->Textures.Find(Face.Texture))
 	{
 		return *Texture;
 	}
 
-	const FString AbsolutePath = FPaths::ProjectDir() / Config->GetTextureRootPlatform() / Face.Texture + ".png";
-#if WITH_EDITOR
-	UTexture2D* Texture = LoadTextureRuntime(AbsolutePath);
-	// TODO: Doesn't work like the runtime version, GetSizeX/Y seems to be wrong
-	// UTexture2D* Texture = LoadTextureEditor(AbsolutePath, Cache);
-#else
-	UTexture2D* Texture = LoadTextureRuntime(AbsolutePath);
-#endif
+	const FString TexturePath = FPaths::ProjectSavedDir() / "UnrealMAP" / Config->Name / "Textures" / Face.Texture +
+		".png";
+	UTexture2D* Texture = FImageUtils::ImportFileAsTexture2D(TexturePath);
 	if (!Texture) return nullptr;
 
 	Texture->PreEditChange(nullptr);
@@ -201,20 +197,52 @@ UTexture2D* FMAPBuilder::FaceTexture(const FMAPFace& Face, UMAPConfig* Config, U
 	Texture->CompressionSettings = TC_BC7;
 	Texture->MipGenSettings = TMGS_FromTextureGroup;
 	Texture->Filter = TF_Nearest;
-	Texture->AssetImportData->Update(AbsolutePath);
+	Texture->AssetImportData->Update(TexturePath);
 	Texture->PostEditChange();
 
 	Cache->Textures.Add(Face.Texture, Texture);
 	return Texture;
 }
 
-UStaticMesh* FMAPBuilder::BrushMesh(const FMAPBrush& Brush, UMAPConfig* Config, UMAPCache* Cache)
+UMaterialInterface* FMAPBuilder::FaceMaterial(const FMAPFace& Face, const UMAPConfig* Config, UMAPCache* Cache)
+{
+	if (const auto Material = Cache->Materials.Find(Face.Texture))
+	{
+		return *Material;
+	}
+
+	const FString FileName = FPaths::GetCleanFilename(Face.Texture);
+	const FString ObjectPath = Config->TextureRoot.Path / Face.Texture + "." + FileName;
+
+	const IAssetRegistry* AssetRegistry = IAssetRegistry::Get();
+	const FAssetData Asset = AssetRegistry->GetAssetByObjectPath(ObjectPath);
+
+	UMaterialInterface* Material = UMaterial::GetDefaultMaterial(MD_Surface);
+
+	if (!Asset.IsValid())
+	{
+		UE_LOG(LogMAP, Error, TEXT("MAPBuilder: Couldn't find asset at path '%s'."), *ObjectPath)
+	}
+	else if (Asset.IsInstanceOf(UTexture2D::StaticClass()) && Config->DefaultMaterial)
+	{
+		UTexture2D* Texture = Cast<UTexture2D>(Asset.GetAsset());
+		UMaterialInstanceDynamic* MID = UMaterialInstanceDynamic::Create(
+			Config->DefaultMaterial,
+			Cache
+		);
+		MID->SetTextureParameterValue("BaseColor", Texture);
+		Material = MID;
+	}
+
+	Cache->Materials.Add(Face.Texture, Material);
+	return Material;
+}
+
+UStaticMesh* FMAPBuilder::BrushMesh(const FMAPBrush& Brush, const UMAPConfig* Config, UMAPCache* Cache)
 {
 	UStaticMesh* Mesh = NewObject<UStaticMesh>(Cache);
-	Mesh->GetStaticMaterials().Add(UMaterial::GetDefaultMaterial(MD_Surface));
 	Mesh->AddSourceModel();
 	FMeshDescription* Desc = Mesh->CreateMeshDescription(0);
-	Desc->CreatePolygonGroup();
 	FStaticMeshAttributes Attributes(*Desc);
 	const TVertexAttributesRef<FVector3f> VertexPositions = Attributes.GetVertexPositions();
 	const TVertexInstanceAttributesRef<FVector3f> VertexInstanceNormals = Attributes.GetVertexInstanceNormals();
@@ -224,37 +252,8 @@ UStaticMesh* FMAPBuilder::BrushMesh(const FMAPBrush& Brush, UMAPConfig* Config, 
 	TMap<FString, FPolygonGroupID> PolyGroups;
 	for (const FMAPFace& Face : Brush.Faces)
 	{
-		TArray<FMAPVertex> FaceVertices;
-
 		UTexture2D* Texture = FaceTexture(Face, Config, Cache);
-		// TODO: Cache materials
-		UMaterialInterface* Material;
-		if (Config->DefaultMaterial && Texture)
-		{
-			UMaterialInstanceDynamic* MID = UMaterialInstanceDynamic::Create(
-				Config->DefaultMaterial,
-				GetTransientPackage()
-			);
-			MID->SetTextureParameterValue("BaseColor", Texture);
-			Material = MID;
-		}
-		else
-		{
-			Material = UMaterial::GetDefaultMaterial(MD_Surface);
-		}
-		Mesh->GetStaticMaterials().Add(Material);
-
-		FPolygonGroupID PolyGroupID;
-		if (auto PolyGroupIDPtr = PolyGroups.Find(Face.Texture))
-		{
-			PolyGroupID = *PolyGroupIDPtr;
-		}
-		else
-		{
-			PolyGroupID = Desc->CreatePolygonGroup();
-			PolyGroups.Add(Face.Texture, PolyGroupID);
-		}
-
+		TArray<FMAPVertex> FaceVertices;
 		for (const FMAPFace& Face1 : Brush.Faces)
 		{
 			for (const FMAPFace& Face2 : Brush.Faces)
@@ -271,7 +270,6 @@ UStaticMesh* FMAPBuilder::BrushMesh(const FMAPBrush& Brush, UMAPConfig* Config, 
 		SortVertices(Face, FaceVertices);
 
 		FVector FaceNormal = Face.Plane.GetNormal();
-
 		TArray<FVertexInstanceID> VertexInstanceIDs;
 		for (const FMAPVertex& Vertex : FaceVertices)
 		{
@@ -281,6 +279,19 @@ UStaticMesh* FMAPBuilder::BrushMesh(const FMAPBrush& Brush, UMAPConfig* Config, 
 			VertexInstanceNormals[VertexInstanceID] = FVector3f(FaceNormal);
 			VertexInstanceUVs[VertexInstanceID] = FVector2f(Vertex.UV);
 			VertexInstanceIDs.Add(VertexInstanceID);
+		}
+
+		FPolygonGroupID PolyGroupID;
+		if (auto PolyGroupIDPtr = PolyGroups.Find(Face.Texture))
+		{
+			PolyGroupID = *PolyGroupIDPtr;
+		}
+		else
+		{
+			UMaterialInterface* Material = FaceMaterial(Face, Config, Cache);
+			Mesh->GetStaticMaterials().Add(Material);
+			PolyGroupID = Desc->CreatePolygonGroup();
+			PolyGroups.Add(Face.Texture, PolyGroupID);
 		}
 
 		Desc->CreatePolygon(PolyGroupID, VertexInstanceIDs);

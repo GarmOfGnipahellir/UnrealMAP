@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "MAPConfig.h"
 #include "Exporters/Exporter.h"
 #include "MAPConfigExporter.generated.h"
 
@@ -24,9 +25,13 @@ public:
 		int32 FileIndex = 0,
 		uint32 PortFlags = 0) override;
 
+	bool IsConfigValid(const UMAPConfig* Config) const;
+
 	bool ExportGameConfig(const UMAPConfig* Config, const FString& OutputDir) const;
-	bool ExportGameEngineProfiles(const FString& OutputDir) const;
+	bool ExportGameEngineProfiles(const UMAPConfig* Config, const FString& OutputDir) const;
 	bool ExportEntitiesDefinition(const FString& OutputDir) const;
+
+	bool ExportTextures(const UMAPConfig* Config) const;
 
 protected:
 	FString GetFilePath() const;

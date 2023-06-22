@@ -55,6 +55,7 @@ public:
 	static UTexture2D* LoadTextureEditor(const FString& FilePath, UObject* Outer);
 #endif
 	static UTexture2D* LoadTextureRuntime(const FString& FilePath);
-	static UTexture2D* FaceTexture(const FMAPFace& Face, UMAPConfig* Config, UMAPCache* Cache);
-	static UStaticMesh* BrushMesh(const FMAPBrush& Brush, UMAPConfig* Config, UMAPCache* Cache);
+	static UTexture2D* FaceTexture(const FMAPFace& Face, const UMAPConfig* Config, UMAPCache* Cache);
+	static UMaterialInterface* FaceMaterial(const FMAPFace& Face, const UMAPConfig* Config, UMAPCache* Cache);
+	static UStaticMesh* BrushMesh(const FMAPBrush& Brush, const UMAPConfig* Config, UMAPCache* Cache);
 };

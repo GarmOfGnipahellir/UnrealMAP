@@ -11,6 +11,9 @@ class UNREALMAP_API UMAPConfig : public UDataAsset
 	GENERATED_BODY()
 
 public:
+	UPROPERTY(Category="MAPConfig", EditAnywhere)
+	FString Name;
+
 	UPROPERTY(Category="MAPConfig", EditAnywhere, meta=(ContentDir))
 	FDirectoryPath TextureRoot;
 
