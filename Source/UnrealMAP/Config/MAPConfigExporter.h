@@ -25,13 +25,15 @@ public:
 		int32 FileIndex = 0,
 		uint32 PortFlags = 0) override;
 
-	bool IsConfigValid(const UMAPConfig* Config) const;
+	static bool IsConfigValid(const UMAPConfig* Config);
 
-	bool ExportGameConfig(const UMAPConfig* Config, const FString& OutputDir) const;
-	bool ExportGameEngineProfiles(const UMAPConfig* Config, const FString& OutputDir) const;
-	bool ExportEntitiesDefinition(const FString& OutputDir) const;
+	static bool ExportGameConfig(const UMAPConfig* Config, const FString& OutputDir);
+	static bool ExportGameEngineProfiles(const UMAPConfig* Config, const FString& OutputDir);
+	static bool ExportEntitiesDefinition(const FString& OutputDir);
 
-	bool ExportTextures(const UMAPConfig* Config) const;
+	static bool ExportTextures(const UMAPConfig* Config);
+	static FString GetAssetTexturePath(const UMAPConfig* Config, const FString& ObjectPath);
+	static bool ExportTextureAsset(const UMAPConfig* Config, const FAssetData& Asset);
 
 protected:
 	FString GetFilePath() const;

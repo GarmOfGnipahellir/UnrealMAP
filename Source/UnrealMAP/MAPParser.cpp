@@ -6,8 +6,6 @@
 
 #include <cwctype>
 
-#include "MAPLog.h"
-
 TTuple<FString, FString> FMAPParser::Tag(const FString& Tag, const FString& Input)
 {
 	if (!Input.StartsWith(Tag))
@@ -319,8 +317,6 @@ TTuple<FString, FMAPEntity> FMAPParser::MAPEntity(const FString& Input)
 			In3 = Ignore(In3);
 			Brushes.Add(Brush);
 			In2 = In3;
-
-			UE_LOG(LogMAP, Display, TEXT("MAPParser: Parsed brush"));
 		}
 		catch (const std::exception&)
 		{
@@ -345,8 +341,6 @@ TTuple<FString, FMAPMap> FMAPParser::MAPMap(const FString& Input)
 			In2 = Ignore(In2);
 			Entities.Add(Entity);
 			In1 = In2;
-
-			UE_LOG(LogMAP, Display, TEXT("MAPParser: Parsed entity"));
 		}
 		catch (const std::exception&)
 		{

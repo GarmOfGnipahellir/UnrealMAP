@@ -9,8 +9,3 @@ UMAPConfig* UMAPGlobals::GetDefaultConfig()
 {
 	return GetDefault<UMAPSettings>()->DefaultConfig.Get();
 }
-
-bool UMAPGlobals::ExportTrenchBroomConfig()
-{
-	return false;
-}

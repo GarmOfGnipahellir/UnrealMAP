@@ -30,7 +30,7 @@ public:
 
 	UPROPERTY()
 	bool bLoaded = false;
-	
+
 	FMAPMap Map;
 
 	UMAPComponent();
@@ -43,7 +43,13 @@ public:
 
 	void SetupWatcher();
 	void OnDirectoryChanged(const TArray<FFileChangeData>& Data);
-	
+
+	void SetupAssetDelegates();
+	void OnAssetAdded(const FAssetData& Asset) const;
+	void OnAssetRemoved(const FAssetData& Asset) const;
+	void OnAssetRenamed(const FAssetData& Asset, const FString& OldName) const;
+	void OnAssetUpdated(const FAssetData& Asset) const;
+
 	FString GetAbsoluteSourceFile() const;
 	bool ShouldBuild() const;
 	void BuildMAP();
@@ -57,5 +63,6 @@ private:
 	UPROPERTY()
 	TArray<TObjectPtr<AActor>> SpawnedActors;
 
+	FString WatchDir;
 	FDelegateHandle WatcherDelegateHandle;
 };

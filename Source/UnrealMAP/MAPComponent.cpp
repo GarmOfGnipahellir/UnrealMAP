@@ -10,6 +10,8 @@
 #include "MAPGlobals.h"
 #include "MAPLog.h"
 #include "MAPParser.h"
+#include "AssetRegistry/IAssetRegistry.h"
+#include "Config/MAPConfigExporter.h"
 #include "Engine/StaticMeshActor.h"
 #include "Misc/FileHelper.h"
 
@@ -17,12 +19,14 @@
 UMAPComponent::UMAPComponent()
 {
 	Config = UMAPGlobals::GetDefaultConfig();
+	WatcherDelegateHandle = FDelegateHandle();
 }
 
 #if WITH_EDITOR
 void UMAPComponent::PostLoad()
 {
 	Super::PostLoad();
+
 	SetupWatcher();
 }
 #endif
@@ -31,6 +35,7 @@ void UMAPComponent::PostInitProperties()
 {
 	Super::PostInitProperties();
 
+	SetupAssetDelegates();
 	BuildMAP();
 }
 
@@ -43,20 +48,25 @@ void UMAPComponent::PostEditChangeProperty(FPropertyChangedEvent& PropertyChange
 		SetupWatcher();
 	}
 
+	if (PropertyChangedEvent.GetMemberPropertyName() == GET_MEMBER_NAME_CHECKED(ThisClass, Config))
+	{
+		SetupAssetDelegates();
+	}
+
 	BuildMAP();
 }
 
 void UMAPComponent::SetupWatcher()
 {
-	if (SourceFile.FilePath.IsEmpty()) return;
-
 	FDirectoryWatcherModule& DirectoryWatcherModule = FModuleManager::LoadModuleChecked<FDirectoryWatcherModule>(
 		"DirectoryWatcher"
 	);
+	DirectoryWatcherModule.Get()->UnregisterDirectoryChangedCallback_Handle(WatchDir, WatcherDelegateHandle);
 	WatcherDelegateHandle.Reset();
-	WatcherDelegateHandle = FDelegateHandle();
 
-	const FString WatchDir = FPaths::GetPath(GetAbsoluteSourceFile());
+	if (SourceFile.FilePath.IsEmpty()) return;
+
+	WatchDir = FPaths::GetPath(GetAbsoluteSourceFile());
 	DirectoryWatcherModule.Get()->RegisterDirectoryChangedCallback_Handle(
 		WatchDir,
 		IDirectoryWatcher::FDirectoryChanged::CreateUObject(this, &UMAPComponent::OnDirectoryChanged),
@@ -77,6 +87,82 @@ void UMAPComponent::OnDirectoryChanged(const TArray<FFileChangeData>& Data)
 	}
 }
 
+void UMAPComponent::SetupAssetDelegates()
+{
+	IAssetRegistry* AssetRegistry = IAssetRegistry::Get();
+
+	AssetRegistry->OnAssetAdded().RemoveAll(this);
+	AssetRegistry->OnAssetRemoved().RemoveAll(this);
+	AssetRegistry->OnAssetRenamed().RemoveAll(this);
+	AssetRegistry->OnAssetUpdated().RemoveAll(this);
+
+	AssetRegistry->OnAssetAdded().AddUObject(this, &UMAPComponent::OnAssetAdded);
+	AssetRegistry->OnAssetRemoved().AddUObject(this, &UMAPComponent::OnAssetRemoved);
+	AssetRegistry->OnAssetRenamed().AddUObject(this, &UMAPComponent::OnAssetRenamed);
+	AssetRegistry->OnAssetUpdated().AddUObject(this, &UMAPComponent::OnAssetUpdated);
+}
+
+void UMAPComponent::OnAssetAdded(const FAssetData& Asset) const
+{
+	if (!Config) return;
+	
+	const FString ObjectPath = Asset.GetObjectPathString();
+	if (ObjectPath.StartsWith(Config->TextureRoot.Path))
+	{
+		UE_LOG(LogMAP, Display, TEXT("MAPComponent: '%s' added."), *ObjectPath);
+		if (UMAPConfigExporter::ExportTextureAsset(Config, Asset))
+		{
+			UE_LOG(LogMAP, Display, TEXT("MAPComponent: Exported '%s' as texture."), *ObjectPath)
+		}
+	}
+}
+
+void UMAPComponent::OnAssetRemoved(const FAssetData& Asset) const
+{
+	if (!Config) return;
+	
+	const FString ObjectPath = Asset.GetObjectPathString();
+	if (ObjectPath.StartsWith(Config->TextureRoot.Path))
+	{
+		UE_LOG(LogMAP, Display, TEXT("MAPComponent: '%s' removed."), *ObjectPath);
+		const FString TexturePath = UMAPConfigExporter::GetAssetTexturePath(Config, ObjectPath);
+		if (FPlatformFileManager::Get().GetPlatformFile().DeleteFile(*TexturePath))
+		{
+			UE_LOG(LogMAP, Display, TEXT("MAPComponent: Deleted '%s'."), *TexturePath)
+		}
+	}
+}
+
+void UMAPComponent::OnAssetRenamed(const FAssetData& Asset, const FString& OldName) const
+{
+	if (!Config) return;
+	
+	const FString ObjectPath = Asset.GetObjectPathString();
+	if (ObjectPath.StartsWith(Config->TextureRoot.Path))
+	{
+		UE_LOG(LogMAP, Display, TEXT("MAPComponent: '%s' renamed to '%s'."), *OldName, *ObjectPath);
+		const FString TexturePath = UMAPConfigExporter::GetAssetTexturePath(Config, OldName);
+		if (FPlatformFileManager::Get().GetPlatformFile().DeleteFile(*TexturePath))
+		{
+			UE_LOG(LogMAP, Display, TEXT("MAPComponent: Deleted '%s'."), *TexturePath)
+		}
+	}
+}
+
+void UMAPComponent::OnAssetUpdated(const FAssetData& Asset) const
+{
+	if (!Config) return;
+	
+	const FString ObjectPath = Asset.GetObjectPathString();
+	if (ObjectPath.StartsWith(Config->TextureRoot.Path))
+	{
+		UE_LOG(LogMAP, Display, TEXT("MAPComponent: '%s' updated."), *ObjectPath);
+		if (UMAPConfigExporter::ExportTextureAsset(Config, Asset))
+		{
+			UE_LOG(LogMAP, Display, TEXT("MAPComponent: Exported '%s' as texture."), *ObjectPath)
+		}
+	}
+}
 
 FString UMAPComponent::GetAbsoluteSourceFile() const
 {

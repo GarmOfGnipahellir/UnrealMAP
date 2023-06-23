@@ -72,7 +72,7 @@ bool UMAPConfigExporter::ExportBinary(
 	return true;
 }
 
-bool UMAPConfigExporter::IsConfigValid(const UMAPConfig* Config) const
+bool UMAPConfigExporter::IsConfigValid(const UMAPConfig* Config)
 {
 	if (!Config) return false;
 	if (Config->Name.IsEmpty()) return false;
@@ -80,7 +80,7 @@ bool UMAPConfigExporter::IsConfigValid(const UMAPConfig* Config) const
 	return true;
 }
 
-bool UMAPConfigExporter::ExportGameConfig(const UMAPConfig* Config, const FString& OutputDir) const
+bool UMAPConfigExporter::ExportGameConfig(const UMAPConfig* Config, const FString& OutputDir)
 {
 	FJsonDomBuilder::FObject GameConfig;
 	GameConfig.Set("version", 5);
@@ -149,7 +149,7 @@ bool UMAPConfigExporter::ExportGameConfig(const UMAPConfig* Config, const FStrin
 	return true;
 }
 
-bool UMAPConfigExporter::ExportGameEngineProfiles(const UMAPConfig* Config, const FString& OutputDir) const
+bool UMAPConfigExporter::ExportGameEngineProfiles(const UMAPConfig* Config, const FString& OutputDir)
 {
 	const FString ProjectFilePath = FPaths::ConvertRelativePathToFull(FPaths::GetProjectFilePath());
 	FString EditorBinaryPath;
@@ -185,7 +185,7 @@ bool UMAPConfigExporter::ExportGameEngineProfiles(const UMAPConfig* Config, cons
 	return true;
 }
 
-bool UMAPConfigExporter::ExportEntitiesDefinition(const FString& OutputDir) const
+bool UMAPConfigExporter::ExportEntitiesDefinition(const FString& OutputDir)
 {
 	const FString FilePath = OutputDir / "Entities.fgd";
 	if (!FFileHelper::SaveStringToFile(TEXT(""), *FilePath))
@@ -196,7 +196,7 @@ bool UMAPConfigExporter::ExportEntitiesDefinition(const FString& OutputDir) cons
 	return true;
 }
 
-bool UMAPConfigExporter::ExportTextures(const UMAPConfig* Config) const
+bool UMAPConfigExporter::ExportTextures(const UMAPConfig* Config)
 {
 	const FString OutputDir = FPaths::ProjectSavedDir() / "UnrealMAP" / Config->Name;
 
@@ -207,39 +207,56 @@ bool UMAPConfigExporter::ExportTextures(const UMAPConfig* Config) const
 
 	for (const FAssetData& Asset : Assets)
 	{
-		FString RelativePath = Asset.GetObjectPathString();
-		FPaths::MakePathRelativeTo(RelativePath, *Config->TextureRoot.Path);
-		FString RelativeDir = FPaths::GetPath(RelativePath);
-		FString Filename = FPaths::GetBaseFilename(RelativePath);
-
-		FString OutputPath = OutputDir / RelativeDir / Filename + ".png";
-
-		if (Asset.IsInstanceOf(UTexture2D::StaticClass()))
+		if (ExportTextureAsset(Config, Asset))
 		{
-			UE_LOG(LogMAP, Display, TEXT("MAPConfigExporter: Texture2D found '%s'."), *OutputPath)
-
-			UTexture2D* Texture = Cast<UTexture2D>(Asset.GetAsset());
-			FImage Image;
-			FImageUtils::GetTexture2DSourceImage(Texture, Image);
-			FImageUtils::SaveImageByExtension(*OutputPath, Image);
-			continue;
+			UE_LOG(LogMAP, Display, TEXT("MAPConfigExporter: Exported '%s' as texture."), *Asset.GetObjectPathString())
 		}
-
-		if (Asset.IsInstanceOf(UMaterialInstance::StaticClass()))
-		{
-			UE_LOG(LogMAP, Display, TEXT("MAPConfigExporter: Material found '%s'."), *OutputPath)
-			// TODO: Bake material to texture and export
-		}
-
-		UE_LOG(
-			LogMAP,
-			Display,
-			TEXT("MAPConfigExporter: Unsupported texture source '%s'."),
-			*RelativePath
-		)
 	}
 
 	return true;
+}
+
+FString UMAPConfigExporter::GetAssetTexturePath(const UMAPConfig* Config, const FString& ObjectPath)
+{
+	const FString OutputDir = FPaths::ProjectSavedDir() / "UnrealMAP" / Config->Name;
+
+	FString RelativePath = ObjectPath;
+	FPaths::MakePathRelativeTo(RelativePath, *Config->TextureRoot.Path);
+
+	const FString RelativeDir = FPaths::GetPath(RelativePath);
+	const FString Filename = FPaths::GetBaseFilename(RelativePath);
+
+	return OutputDir / RelativeDir / Filename + ".png";
+}
+
+bool UMAPConfigExporter::ExportTextureAsset(const UMAPConfig* Config, const FAssetData& Asset)
+{
+	const FString OutputPath = GetAssetTexturePath(Config, Asset.GetObjectPathString());
+
+	if (Asset.IsInstanceOf(UTexture2D::StaticClass()))
+	{
+		UE_LOG(LogMAP, Display, TEXT("MAPConfigExporter: Texture2D found '%s'."), *Asset.GetObjectPathString())
+
+		UTexture2D* Texture = Cast<UTexture2D>(Asset.GetAsset());
+		FImage Image;
+		FImageUtils::GetTexture2DSourceImage(Texture, Image);
+		return FImageUtils::SaveImageByExtension(*OutputPath, Image);
+	}
+
+	if (Asset.IsInstanceOf(UMaterialInstance::StaticClass()))
+	{
+		UE_LOG(LogMAP, Display, TEXT("MAPConfigExporter: Material found '%s'."), *Asset.GetObjectPathString())
+		// TODO: Bake material to texture and export
+		return false;
+	}
+
+	UE_LOG(
+		LogMAP,
+		Display,
+		TEXT("MAPConfigExporter: Unsupported texture source '%s'."),
+		*Asset.GetObjectPathString()
+	)
+	return false;
 }
 
 FString UMAPConfigExporter::GetFilePath() const

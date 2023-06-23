@@ -15,6 +15,4 @@ class UNREALMAP_API UMAPGlobals : public UObject
 
 public:
 	static UMAPConfig* GetDefaultConfig();
-	
-	static bool ExportTrenchBroomConfig();
 };
