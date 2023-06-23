@@ -45,6 +45,7 @@ public class UnrealMAP : ModuleRules
 				"StaticMeshDescription",
 				"Json",
 				"JsonUtilities",
+				"DirectoryWatcher",
 				// ... add private dependencies that you statically link with here ...	
 			}
 		);

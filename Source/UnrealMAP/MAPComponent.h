@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "MAPData.h"
+#include "IDirectoryWatcher.h"
 #include "MAPModel.h"
 #include "Config/MAPConfig.h"
 #include "MAPComponent.generated.h"
@@ -25,9 +25,6 @@ public:
 	UPROPERTY(Category="MAP", EditAnywhere)
 	TObjectPtr<UMAPConfig> Config;
 
-	UPROPERTY(Category="MAP", EditAnywhere)
-	FMAPData Data;
-
 	UPROPERTY(Category="MAP", VisibleAnywhere)
 	TObjectPtr<UMAPCache> Cache;
 
@@ -37,13 +34,21 @@ public:
 	FMAPMap Map;
 
 	UMAPComponent();
-	
+
+#if WITH_EDITOR
+	virtual void PostLoad() override;
+#endif
 	virtual void PostInitProperties() override;
 	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
 
+	void SetupWatcher();
+	void OnDirectoryChanged(const TArray<FFileChangeData>& Data);
+	
 	FString GetAbsoluteSourceFile() const;
 	bool ShouldBuild() const;
 	void BuildMAP();
+	void ForceBuildMAP();
+	void BuildMAPImpl();
 
 	void SpawnBrush(UWorld* World, const FMAPBrush& Brush, int32 Index, AActor* Parent = nullptr);
 	void SpawnEntity(UWorld* World, const FMAPEntity& Entity, int32 Index, AActor* Parent = nullptr);
@@ -51,4 +56,6 @@ public:
 private:
 	UPROPERTY()
 	TArray<TObjectPtr<AActor>> SpawnedActors;
+
+	FDelegateHandle WatcherDelegateHandle;
 };

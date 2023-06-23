@@ -3,6 +3,8 @@
 
 #include "MAPComponent.h"
 
+#include "DirectoryWatcherModule.h"
+#include "IDirectoryWatcher.h"
 #include "MAPBuilder.h"
 #include "MAPCache.h"
 #include "MAPGlobals.h"
@@ -17,6 +19,14 @@ UMAPComponent::UMAPComponent()
 	Config = UMAPGlobals::GetDefaultConfig();
 }
 
+#if WITH_EDITOR
+void UMAPComponent::PostLoad()
+{
+	Super::PostLoad();
+	SetupWatcher();
+}
+#endif
+
 void UMAPComponent::PostInitProperties()
 {
 	Super::PostInitProperties();
@@ -28,14 +38,50 @@ void UMAPComponent::PostEditChangeProperty(FPropertyChangedEvent& PropertyChange
 {
 	Super::PostEditChangeProperty(PropertyChangedEvent);
 
+	if (PropertyChangedEvent.GetMemberPropertyName() == GET_MEMBER_NAME_CHECKED(ThisClass, SourceFile))
+	{
+		SetupWatcher();
+	}
+
 	BuildMAP();
 }
 
+void UMAPComponent::SetupWatcher()
+{
+	if (SourceFile.FilePath.IsEmpty()) return;
+
+	FDirectoryWatcherModule& DirectoryWatcherModule = FModuleManager::LoadModuleChecked<FDirectoryWatcherModule>(
+		"DirectoryWatcher"
+	);
+	WatcherDelegateHandle.Reset();
+	WatcherDelegateHandle = FDelegateHandle();
+
+	const FString WatchDir = FPaths::GetPath(GetAbsoluteSourceFile());
+	DirectoryWatcherModule.Get()->RegisterDirectoryChangedCallback_Handle(
+		WatchDir,
+		IDirectoryWatcher::FDirectoryChanged::CreateUObject(this, &UMAPComponent::OnDirectoryChanged),
+		WatcherDelegateHandle,
+		0
+	);
+	UE_LOG(LogMAP, Display, TEXT("MAPComponent: Setup watcher in '%s'."), *WatchDir);
+}
+
+void UMAPComponent::OnDirectoryChanged(const TArray<FFileChangeData>& Data)
+{
+	for (const FFileChangeData& Change : Data)
+	{
+		if (Change.Filename == GetAbsoluteSourceFile())
+		{
+			BuildMAP();
+		}
+	}
+}
+
+
 FString UMAPComponent::GetAbsoluteSourceFile() const
 {
-	FString AbsolutePath = FPaths::ProjectDir() / SourceFile.FilePath;
-	FPaths::NormalizeFilename(AbsolutePath);
-	return AbsolutePath;
+	const FString AbsolutePath = FPaths::ProjectDir() / SourceFile.FilePath;
+	return FPaths::ConvertRelativePathToFull(AbsolutePath);
 }
 
 bool UMAPComponent::ShouldBuild() const
@@ -45,8 +91,18 @@ bool UMAPComponent::ShouldBuild() const
 	return SourceHash != CurrentHash;
 }
 
-// TODO: Rebuild on file changes
 void UMAPComponent::BuildMAP()
+{
+	if (!ShouldBuild()) return;
+	BuildMAPImpl();
+}
+
+void UMAPComponent::ForceBuildMAP()
+{
+	BuildMAPImpl();
+}
+
+void UMAPComponent::BuildMAPImpl()
 {
 	const FString AbsolutePath = GetAbsoluteSourceFile();
 

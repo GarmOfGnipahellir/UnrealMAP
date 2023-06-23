@@ -5,7 +5,6 @@
 
 #include "ImageUtils.h"
 #include "MAPCache.h"
-#include "MAPData.h"
 #include "MAPLog.h"
 #include "MaterialDomain.h"
 #include "MeshDescription.h"
