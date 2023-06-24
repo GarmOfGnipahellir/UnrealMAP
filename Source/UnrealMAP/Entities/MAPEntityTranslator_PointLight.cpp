@@ -28,5 +28,5 @@ TArray<FMAPEntityProperty> UMAPEntityTranslator_PointLight::GetEntityProps_Imple
 
 TArray<FString> UMAPEntityTranslator_PointLight::GetPropNames_Implementation(TSubclassOf<AActor> ActorClass) const
 {
-	return {"PointLightComponent:Intensity"};
+	return {"PointLightComponent-Intensity"};
 }

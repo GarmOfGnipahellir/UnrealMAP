@@ -36,13 +36,43 @@ TArray<FString> UMAPEntityTranslator::GetPropNames_Implementation(TSubclassOf<AA
 	return {};
 }
 
-FString UMAPEntityTranslator::ToString(const TSubclassOf<AActor> ActorClass) const
+FString UMAPEntityTranslator::ToFGD(const TSubclassOf<AActor> ActorClass) const
 {
+	TArray<FString> EntityProps;
+	for (const FString& PropName : GetPropNames(ActorClass))
+	{
+		const FPropertyRef Property = GetProperty(PropName, ActorClass);
+		if (!Property)
+		{
+			UE_LOG(
+				LogMAP,
+				Error,
+				TEXT("MAPEntityTranslator: Couldn't find property '%s' for '%s'"),
+				*PropName,
+				*ActorClass->GetName()
+			)
+		}
+
+		const FString PropertyFGD = PropertyToFGD(PropName, Property);
+		if (PropertyFGD.IsEmpty())
+		{
+			UE_LOG(
+				LogMAP,
+				Error,
+				TEXT("MAPEntityTranslator: Couldn't convert property '%s' for '%s' to FGD"),
+				*PropName,
+				*ActorClass->GetName()
+			)
+		}
+
+		EntityProps.Add(PropertyFGD);
+	}
+
 	FStringFormatNamedArguments FormatArgs;
 	FormatArgs.Add(TEXT("ClassType"), ClassTypeToString(GetClassType(ActorClass)));
 	FormatArgs.Add(TEXT("ClassProps"), ClassPropsToString(GetClassProps(ActorClass)));
 	FormatArgs.Add(TEXT("EntityName"), GetEntityName(ActorClass));
-	FormatArgs.Add(TEXT("EntityProps"), EntityPropsToString(GetEntityProps(ActorClass)));
+	FormatArgs.Add(TEXT("EntityProps"), FString::Join(EntityProps, TEXT("\n\n")));
 	return FString::Format(TEXT("@{ClassType} {ClassProps} = {EntityName} [\n{EntityProps}\n]"), FormatArgs);
 }
 
@@ -112,13 +142,16 @@ FString UMAPEntityTranslator::EntityPropsToString(const TArray<FMAPEntityPropert
 	return FString::Join(PropStrings, TEXT("\n"));
 }
 
-FProperty* UMAPEntityTranslator::GetProperty(const FString& PropertyName, TSubclassOf<AActor> ActorClass)
+FPropertyRef UMAPEntityTranslator::GetProperty(const FString& PropertyName, const TSubclassOf<AActor> ActorClass)
 {
+	const AActor* Actor = ActorClass->GetDefaultObject<AActor>();
+	check(Actor)
+
 	TArray<FString> NameParts;
-	PropertyName.ParseIntoArray(NameParts, TEXT(":"));
+	PropertyName.ParseIntoArray(NameParts, TEXT("-"));
 	if (NameParts.Num() == 1)
 	{
-		return ActorClass->FindPropertyByName(FName(PropertyName));
+		return FPropertyRef(Actor, ActorClass->FindPropertyByName(FName(PropertyName)));
 	}
 	if (NameParts.Num() == 2)
 	{
@@ -134,11 +167,8 @@ FProperty* UMAPEntityTranslator::GetProperty(const FString& PropertyName, TSubcl
 				*NameParts[0],
 				*ActorClass->GetName()
 			);
-			return nullptr;
+			return FPropertyRef();
 		}
-
-		const AActor* Actor = ActorClass->GetDefaultObject<AActor>();
-		check(Actor)
 
 		const UObject* Component = ComponentProperty->GetObjectPropertyValue_InContainer(Actor);
 		if (!Component)
@@ -150,10 +180,10 @@ FProperty* UMAPEntityTranslator::GetProperty(const FString& PropertyName, TSubcl
 				*NameParts[0],
 				*ActorClass->GetName()
 			);
-			return nullptr;
+			return FPropertyRef();
 		}
 
-		return Component->GetClass()->FindPropertyByName(FName(NameParts[1]));
+		return FPropertyRef(Component, Component->GetClass()->FindPropertyByName(FName(NameParts[1])));
 	}
 
 	UE_LOG(
@@ -162,19 +192,53 @@ FProperty* UMAPEntityTranslator::GetProperty(const FString& PropertyName, TSubcl
 		TEXT("MAPEntityTranslator: Failed to parse property name '%s'"),
 		*PropertyName
 	);
-	return nullptr;
+	return FPropertyRef();
 }
 
 FString UMAPEntityTranslator::PropertyToFGD(
 	const FString& PropertyName,
-	FProperty* Property,
-	TSubclassOf<AActor> ActorClass)
+	const FPropertyRef& PropertyRef)
 {
+	if (!PropertyRef)
+	{
+		UE_LOG(
+			LogMAP,
+			Error,
+			TEXT("MAPEntityTranslator: Invalid property reference."),
+		);
+		return "";
+	}
+
+	FString PropertyType = "";
+	FString PropertyDefault = "";
+	if (const FFloatProperty* FloatProperty = CastField<FFloatProperty>(PropertyRef.Property))
+	{
+		PropertyType = "float";
+		PropertyDefault = FloatProperty->GetNumericPropertyValueToString_InContainer(PropertyRef.Container);
+	}
+	else if (const FBoolProperty* BoolProperty = CastField<FBoolProperty>(PropertyRef.Property))
+	{
+		PropertyType = "boolean";
+		PropertyDefault = BoolProperty->GetPropertyValue_InContainer(PropertyRef.Container) ? "true" : "false";
+	}
+
+	if (PropertyType.IsEmpty())
+	{
+		UE_LOG(
+			LogMAP,
+			Error,
+			TEXT("MAPEntityTranslator: Failed to get property type from '%s' for '%s'."),
+			*PropertyName,
+			*PropertyRef.Container->GetClass()->GetName()
+		);
+		return "";
+	}
+
 	FStringFormatOrderedArguments FormatArgs;
+	FormatArgs.Add(PropertyRef.Property->GetName());
+	FormatArgs.Add(PropertyType);
 	FormatArgs.Add(PropertyName);
-	FormatArgs.Add(Property->GetClass()->GetName());
-	FormatArgs.Add(Property->GetName());
-	FormatArgs.Add(""); // TODO: Get default value
-	FormatArgs.Add(""); // TODO: Get tooltip as description
+	FormatArgs.Add(PropertyDefault);
+	FormatArgs.Add(PropertyRef.Property->GetToolTipText(true).ToString());
 	return FString::Format(TEXT("{0}({1}) : \"{2}\" : \"{3}\" : \"{4}\""), FormatArgs);
 }

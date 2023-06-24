@@ -16,13 +16,9 @@ struct FMAPClassProperty
 {
 	GENERATED_BODY()
 
-	FMAPClassProperty() : Name(""), Value("")
-	{
-	}
+	FMAPClassProperty() : Name(""), Value("") { }
 
-	FMAPClassProperty(const FString& InName, const FString& InValue) : Name(InName), Value(InValue)
-	{
-	}
+	FMAPClassProperty(const FString& InName, const FString& InValue) : Name(InName), Value(InValue) { }
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FString Name;
@@ -50,9 +46,7 @@ struct FMAPEntityProperty
 		Type(EMAPEntityPropertyType::String),
 		DisplayName(""),
 		DefaultValue(""),
-		Description("")
-	{
-	}
+		Description("") { }
 
 	FMAPEntityProperty(
 		const FString& InName,
@@ -61,9 +55,7 @@ struct FMAPEntityProperty
 		Type(InType),
 		DisplayName(""),
 		DefaultValue(""),
-		Description("")
-	{
-	}
+		Description("") { }
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FString Name;
@@ -79,4 +71,18 @@ struct FMAPEntityProperty
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FString Description;
+};
+
+struct FPropertyRef
+{
+	FPropertyRef(): Container(nullptr), Property(nullptr) { }
+
+	FPropertyRef(
+		const UObject* InContainer,
+		const FProperty* InProperty): Container(InContainer), Property(InProperty) { }
+
+	const UObject* Container;
+	const FProperty* Property;
+
+	explicit operator bool() const { return Container && Property; }
 };

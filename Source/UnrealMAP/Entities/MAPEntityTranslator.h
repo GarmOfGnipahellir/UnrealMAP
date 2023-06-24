@@ -31,7 +31,7 @@ public:
 	UFUNCTION(Category="MAPEntityTranslator", BlueprintNativeEvent)
 	TArray<FString> GetPropNames(TSubclassOf<AActor> ActorClass) const;
 
-	FString ToString(TSubclassOf<AActor> ActorClass) const;
+	FString ToFGD(TSubclassOf<AActor> ActorClass) const;
 
 	static FString ClassTypeToString(const EMAPClassType& ClassType);
 	static FString ClassPropToString(const FMAPClassProperty& ClassProp);
@@ -40,6 +40,6 @@ public:
 	static FString EntityPropToString(const FMAPEntityProperty& EntityProp);
 	static FString EntityPropsToString(const TArray<FMAPEntityProperty>& EntityProps);
 
-	static FProperty* GetProperty(const FString& PropertyName, TSubclassOf<AActor> ActorClass);
-	static FString PropertyToFGD(const FString& PropertyName, FProperty* Property, TSubclassOf<AActor> ActorClass);
+	static FPropertyRef GetProperty(const FString& PropertyName, TSubclassOf<AActor> ActorClass);
+	static FString PropertyToFGD(const FString& PropertyName, const FPropertyRef& PropertyRef);
 };

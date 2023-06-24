@@ -21,6 +21,9 @@ public:
 
 	AMAPActor();
 
+	UFUNCTION(Category="MAP", CallInEditor)
+	void RebuildMAP();
+
 	virtual void PostRegisterAllComponents() override;
 
 private:

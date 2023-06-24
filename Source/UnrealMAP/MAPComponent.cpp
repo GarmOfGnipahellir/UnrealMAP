@@ -24,6 +24,11 @@ UMAPComponent::UMAPComponent()
 	WatcherDelegateHandle = FDelegateHandle();
 }
 
+void UMAPComponent::RebuildMAP()
+{
+	ForceBuildMAP();
+}
+
 #if WITH_EDITOR
 void UMAPComponent::PostLoad()
 {
@@ -258,10 +263,18 @@ void UMAPComponent::SpawnEntity(UWorld* World, const FMAPEntity& Entity, const i
 	FString ClassName;
 	if (Entity.GetProperty("classname", ClassName))
 	{
-		if (ClassName == "PointLight")
+		UClass* Class = nullptr;
+		for (TObjectIterator<UClass> It; It; ++It)
 		{
-			APointLight* PointLight = World->SpawnActor<APointLight>();
-			EntityActor = PointLight;
+			if ((*It)->GetName() == ClassName)
+			{
+				Class = *It;
+				break;
+			}
+		}
+		if (Class)
+		{
+			EntityActor = World->SpawnActor(Class);
 		}
 	}
 
@@ -282,7 +295,7 @@ void UMAPComponent::SpawnEntity(UWorld* World, const FMAPEntity& Entity, const i
 
 		RootComponent->RegisterComponent();
 	}
-	
+
 	SpawnedActors.Add(EntityActor);
 
 #if WITH_EDITOR

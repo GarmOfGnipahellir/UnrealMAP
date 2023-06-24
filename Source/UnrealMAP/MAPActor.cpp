@@ -14,6 +14,11 @@ AMAPActor::AMAPActor()
 	RootComponent = MAPComponent;
 }
 
+void AMAPActor::RebuildMAP()
+{
+	MAPComponent->RebuildMAP();
+}
+
 void AMAPActor::PostRegisterAllComponents()
 {
 	Super::PostRegisterAllComponents();

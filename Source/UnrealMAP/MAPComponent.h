@@ -35,6 +35,9 @@ public:
 
 	UMAPComponent();
 
+	UFUNCTION(Category="MAP", CallInEditor)
+	void RebuildMAP();
+
 #if WITH_EDITOR
 	virtual void PostLoad() override;
 #endif

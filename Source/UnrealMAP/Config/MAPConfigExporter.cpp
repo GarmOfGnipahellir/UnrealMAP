@@ -205,17 +205,7 @@ FString UMAPConfigExporter::ActorClassToEntityDefinition(const TSubclassOf<AActo
 	if (!SupportedTranslator) return "";
 	UE_LOG(LogMAP, Display, TEXT("MAPConfigExporter: Found translator '%s'."), *SupportedTranslator->GetName())
 
-	return SupportedTranslator->ToString(ActorClass);
-
-	const FString ClassType = "@PointClass";
-	const FString ClassProps = "size(-16 -16 -16, 16 16 16)";
-	const FString EntityName = ActorClass->GetName();
-
-	FStringFormatNamedArguments FormatArgs;
-	FormatArgs.Add(TEXT("ClassType"), ClassType);
-	FormatArgs.Add(TEXT("ClassProps"), ClassProps);
-	FormatArgs.Add(TEXT("EntityName"), EntityName);
-	return FString::Format(TEXT("{ClassType} {ClassProps} = {EntityName} []"), FormatArgs);
+	return SupportedTranslator->ToFGD(ActorClass);
 }
 
 bool UMAPConfigExporter::ExportEntitiesDefinition(const FString& OutputDir)
