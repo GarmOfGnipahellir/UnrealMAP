@@ -8,9 +8,12 @@
 #include "JsonDomBuilder.h"
 #include "MAPConfig.h"
 #include "AssetRegistry/IAssetRegistry.h"
+#include "Engine/PointLight.h"
+#include "GameFramework/PlayerStart.h"
 #include "Materials/MaterialInstance.h"
 #include "Misc/FileHelper.h"
 #include "UnrealMAP/MAPLog.h"
+#include "UnrealMAP/Entities/MAPEntityTranslator.h"
 
 UMAPConfigExporter::UMAPConfigExporter() : UExporter()
 {
@@ -185,10 +188,46 @@ bool UMAPConfigExporter::ExportGameEngineProfiles(const UMAPConfig* Config, cons
 	return true;
 }
 
+FString UMAPConfigExporter::ActorClassToEntityDefinition(const TSubclassOf<AActor> ActorClass)
+{
+	UMAPEntityTranslator* SupportedTranslator = nullptr;
+	for (TObjectIterator<UClass> It; It; ++It)
+	{
+		if ((*It)->IsChildOf(UMAPEntityTranslator::StaticClass()))
+		{
+			UMAPEntityTranslator* Translator = (*It)->GetDefaultObject<UMAPEntityTranslator>();
+			if (ActorClass->IsChildOf(Translator->GetSupportedClass()))
+			{
+				SupportedTranslator = Translator;
+			}
+		}
+	}
+	if (!SupportedTranslator) return "";
+	UE_LOG(LogMAP, Display, TEXT("MAPConfigExporter: Found translator '%s'."), *SupportedTranslator->GetName())
+
+	return SupportedTranslator->ToString(ActorClass);
+
+	const FString ClassType = "@PointClass";
+	const FString ClassProps = "size(-16 -16 -16, 16 16 16)";
+	const FString EntityName = ActorClass->GetName();
+
+	FStringFormatNamedArguments FormatArgs;
+	FormatArgs.Add(TEXT("ClassType"), ClassType);
+	FormatArgs.Add(TEXT("ClassProps"), ClassProps);
+	FormatArgs.Add(TEXT("EntityName"), EntityName);
+	return FString::Format(TEXT("{ClassType} {ClassProps} = {EntityName} []"), FormatArgs);
+}
+
 bool UMAPConfigExporter::ExportEntitiesDefinition(const FString& OutputDir)
 {
+	TArray<FString> Definitions = {
+		ActorClassToEntityDefinition(APlayerStart::StaticClass()),
+		ActorClassToEntityDefinition(APointLight::StaticClass())
+	};
+
+	const FString FileContent = FString::Join(Definitions, TEXT("\n\n"));
 	const FString FilePath = OutputDir / "Entities.fgd";
-	if (!FFileHelper::SaveStringToFile(TEXT(""), *FilePath))
+	if (!FFileHelper::SaveStringToFile(FileContent, *FilePath))
 	{
 		UE_LOG(LogMAP, Error, TEXT("MAPConfigExporter: Failed to save file '%s'."), *FilePath)
 		return false;

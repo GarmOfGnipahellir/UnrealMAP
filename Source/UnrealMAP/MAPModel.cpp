@@ -55,6 +55,34 @@ bool FMAPBrush::operator!=(const FMAPBrush& Other) const
 	return Faces != Other.Faces;
 }
 
+bool FMAPEntity::GetProperty(const FString& Key, FString& OutValue) const
+{
+	if (const auto Value = Properties.Find(Key))
+	{
+		OutValue = *Value;
+		return true;
+	}
+	return false;
+}
+
+bool FMAPEntity::GetPropertyAsVector(const FString& Key, FVector& OutValue) const
+{
+	FString TextValue;
+	if (GetProperty(Key, TextValue))
+	{
+		TArray<FString> Parts;
+		TextValue.ParseIntoArrayWS(Parts);
+		if (Parts.Num() != 3) return false;
+		for (const FString& Part : Parts)
+		{
+			if (!Part.IsNumeric()) return false;
+		}
+		OutValue = FVector(FCString::Atof(*Parts[0]), FCString::Atof(*Parts[1]), FCString::Atof(*Parts[2]));
+		return true;
+	}
+	return false;
+}
+
 bool FMAPEntity::operator==(const FMAPEntity& Other) const
 {
 	return Properties.OrderIndependentCompareEqual(Other.Properties) && Brushes == Other.Brushes;

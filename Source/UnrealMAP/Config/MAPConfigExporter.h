@@ -29,6 +29,8 @@ public:
 
 	static bool ExportGameConfig(const UMAPConfig* Config, const FString& OutputDir);
 	static bool ExportGameEngineProfiles(const UMAPConfig* Config, const FString& OutputDir);
+
+	static FString ActorClassToEntityDefinition(const TSubclassOf<AActor> ActorClass);
 	static bool ExportEntitiesDefinition(const FString& OutputDir);
 
 	static bool ExportTextures(const UMAPConfig* Config);

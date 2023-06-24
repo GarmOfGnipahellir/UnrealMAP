@@ -12,7 +12,9 @@
 #include "MAPParser.h"
 #include "AssetRegistry/IAssetRegistry.h"
 #include "Config/MAPConfigExporter.h"
+#include "Engine/PointLight.h"
 #include "Engine/StaticMeshActor.h"
+#include "GameFramework/PlayerStart.h"
 #include "Misc/FileHelper.h"
 
 
@@ -46,6 +48,7 @@ void UMAPComponent::PostEditChangeProperty(FPropertyChangedEvent& PropertyChange
 	if (PropertyChangedEvent.GetMemberPropertyName() == GET_MEMBER_NAME_CHECKED(ThisClass, SourceFile))
 	{
 		SetupWatcher();
+		SourceHash.Reset();
 	}
 
 	if (PropertyChangedEvent.GetMemberPropertyName() == GET_MEMBER_NAME_CHECKED(ThisClass, Config))
@@ -105,7 +108,7 @@ void UMAPComponent::SetupAssetDelegates()
 void UMAPComponent::OnAssetAdded(const FAssetData& Asset) const
 {
 	if (!Config) return;
-	
+
 	const FString ObjectPath = Asset.GetObjectPathString();
 	if (ObjectPath.StartsWith(Config->TextureRoot.Path))
 	{
@@ -120,7 +123,7 @@ void UMAPComponent::OnAssetAdded(const FAssetData& Asset) const
 void UMAPComponent::OnAssetRemoved(const FAssetData& Asset) const
 {
 	if (!Config) return;
-	
+
 	const FString ObjectPath = Asset.GetObjectPathString();
 	if (ObjectPath.StartsWith(Config->TextureRoot.Path))
 	{
@@ -136,7 +139,7 @@ void UMAPComponent::OnAssetRemoved(const FAssetData& Asset) const
 void UMAPComponent::OnAssetRenamed(const FAssetData& Asset, const FString& OldName) const
 {
 	if (!Config) return;
-	
+
 	const FString ObjectPath = Asset.GetObjectPathString();
 	if (ObjectPath.StartsWith(Config->TextureRoot.Path))
 	{
@@ -152,7 +155,7 @@ void UMAPComponent::OnAssetRenamed(const FAssetData& Asset, const FString& OldNa
 void UMAPComponent::OnAssetUpdated(const FAssetData& Asset) const
 {
 	if (!Config) return;
-	
+
 	const FString ObjectPath = Asset.GetObjectPathString();
 	if (ObjectPath.StartsWith(Config->TextureRoot.Path))
 	{
@@ -251,28 +254,50 @@ void UMAPComponent::SpawnBrush(UWorld* World, const FMAPBrush& Brush, const int3
 
 void UMAPComponent::SpawnEntity(UWorld* World, const FMAPEntity& Entity, const int32 Index, AActor* Parent)
 {
-	AActor* EntityActor = World->SpawnActor<AActor>();
+	AActor* EntityActor = nullptr;
+	FString ClassName;
+	if (Entity.GetProperty("classname", ClassName))
+	{
+		if (ClassName == "PointLight")
+		{
+			APointLight* PointLight = World->SpawnActor<APointLight>();
+			EntityActor = PointLight;
+		}
+	}
+
+	if (!EntityActor)
+	{
+		EntityActor = World->SpawnActor<AActor>();
+
+		USceneComponent* RootComponent = NewObject<USceneComponent>(
+			EntityActor,
+			GetDefaultSceneRootVariableName(),
+			RF_Transactional
+		);
+		RootComponent->Mobility = EComponentMobility::Movable;
+		RootComponent->bVisualizeComponent = false;
+
+		EntityActor->SetRootComponent(RootComponent);
+		EntityActor->AddInstanceComponent(RootComponent);
+
+		RootComponent->RegisterComponent();
+	}
+	
 	SpawnedActors.Add(EntityActor);
+
 #if WITH_EDITOR
 	EntityActor->SetActorLabel(FString::Printf(TEXT("Entity%d"), Index));
 #endif
 
-	USceneComponent* RootComponent = NewObject<USceneComponent>(
-		EntityActor,
-		GetDefaultSceneRootVariableName(),
-		RF_Transactional
-	);
-	RootComponent->Mobility = EComponentMobility::Movable;
-	RootComponent->bVisualizeComponent = false;
-
-	EntityActor->SetRootComponent(RootComponent);
-	EntityActor->AddInstanceComponent(RootComponent);
-
-	RootComponent->RegisterComponent();
-
 	if (Parent)
 	{
 		EntityActor->AttachToActor(Parent, FAttachmentTransformRules::SnapToTargetIncludingScale);
+	}
+
+	FVector Origin;
+	if (Entity.GetPropertyAsVector("origin", Origin))
+	{
+		EntityActor->GetRootComponent()->SetRelativeLocation(Origin);
 	}
 
 	for (int i = 0; i < Entity.Brushes.Num(); ++i)

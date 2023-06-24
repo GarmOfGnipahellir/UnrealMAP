@@ -44,6 +44,9 @@ struct FMAPEntity
 	TMap<FString, FString> Properties;
 	TArray<FMAPBrush> Brushes;
 
+	bool GetProperty(const FString& Key, FString& OutValue) const;
+	bool GetPropertyAsVector(const FString& Key, FVector& OutValue) const;
+
 	bool operator==(const FMAPEntity& Other) const;
 	bool operator!=(const FMAPEntity& Other) const;
 };
