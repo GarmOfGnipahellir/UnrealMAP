@@ -152,7 +152,7 @@ void FFGDProperty_Spec::Define()
 					);
 
 					APointLight* PointLight = World->SpawnActor<APointLight>();
-					TestNotEqual("Pre set", PointLight->PointLightComponent->LightColor, FColor(255, 255, 255));
+					TestNotEqual("Pre set", PointLight->PointLightComponent->LightColor, FColor(128, 128, 255));
 					Property->SetOnObject("128 128 255", PointLight);
 					TestEqual("Post set", PointLight->PointLightComponent->LightColor, FColor(128, 128, 255));
 				}
@@ -170,7 +170,7 @@ void FFGDProperty_Spec::Define()
 					);
 
 					APointLight* PointLight = World->SpawnActor<APointLight>();
-					TestNotEqual("Pre set", PointLight->PointLightComponent->GetRelativeLocation(), FVector(0, 0, 0));
+					TestNotEqual("Pre set", PointLight->PointLightComponent->GetRelativeLocation(), FVector(1, 2, 3));
 					Property->SetOnObject("1 2 3", PointLight);
 					TestEqual("Post set", PointLight->PointLightComponent->GetRelativeLocation(), FVector(1, 2, 3));
 				}

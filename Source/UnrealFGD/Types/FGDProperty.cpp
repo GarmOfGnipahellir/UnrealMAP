@@ -85,9 +85,27 @@ void UFGDProperty::SetOnObject(const FString& InValue, UObject* InObject) const
 	}
 	if (const FStructProperty* StructProperty = CastField<FStructProperty>(Property))
 	{
+		if (StructProperty->Struct->GetName() == "Vector")
+		{
+			const TOptional<FVector> Vector = FGDUtils::ParseVector(InValue);
+			if (!Vector)
+			{
+				UE_LOG(LogTemp, Warning, TEXT("Failed to parse vector from '%s'."), *InValue)
+				return;
+			}
+			StructProperty->SetValue_InContainer(Container, new FVector(*Vector));
+			return;
+		}
 		if (StructProperty->Struct->GetName() == "Color")
 		{
-			// TODO: Parse FGD color to FColor
+			const TOptional<FColor> Color = FGDUtils::ParseColor(InValue);
+			if (!Color)
+			{
+				UE_LOG(LogTemp, Warning, TEXT("Failed to parse color from '%s'."), *InValue)
+				return;
+			}
+			StructProperty->SetValue_InContainer(Container, new FColor(*Color));
+			return;
 		}
 
 		UE_LOG(LogTemp, Warning, TEXT("Unsupported struct property type '%s'."), *StructProperty->Struct->GetName())
