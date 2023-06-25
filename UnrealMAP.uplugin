@@ -16,6 +16,11 @@
 	"Installed": false,
 	"Modules": [
 		{
+			"Name": "UnrealFGD",
+			"Type": "Runtime",
+			"LoadingPhase": "Default"
+		},
+		{
 			"Name": "UnrealMAP",
 			"Type": "Runtime",
 			"LoadingPhase": "Default"

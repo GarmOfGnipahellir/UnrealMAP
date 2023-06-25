@@ -55,4 +55,5 @@
 {
 "classname" "PointLight"
 "origin" "0 0 256"
+"Intensity" "10000"
 }
