@@ -12,21 +12,19 @@ UClass* UMAPEntityTranslator_PointLight::GetSupportedClass_Implementation() cons
 	return APointLight::StaticClass();
 }
 
-TArray<FMAPEntityProperty> UMAPEntityTranslator_PointLight::GetEntityProps_Implementation(
-	const TSubclassOf<AActor> ActorClass) const
+TArray<FString> UMAPEntityTranslator_PointLight::GetClassProperties_Implementation(TSubclassOf<AActor> ActorClass) const
 {
-	const APointLight* PointLight = ActorClass->GetDefaultObject<APointLight>();
-	if (!PointLight) return {};
-
-	FProperty* Property = PointLight->PointLightComponent->StaticClass()->FindPropertyByName("Intensity");
-	UE_LOG(LogMAP, Display, TEXT("APointLight::Intensity(%s)"), *Property->GetClass()->GetName());
-
-	return {
-		FMAPEntityProperty("intensity", EMAPEntityPropertyType::Float),
-	};
+	TArray<FString> Result = Super::GetClassProperties_Implementation(ActorClass);
+	Result.Add("sphere(attenuation_radius)");
+	return Result;
 }
 
-TArray<FString> UMAPEntityTranslator_PointLight::GetPropNames_Implementation(TSubclassOf<AActor> ActorClass) const
+TArray<FString> UMAPEntityTranslator_PointLight::GetPropertyPaths_Implementation(TSubclassOf<AActor> ActorClass) const
 {
-	return {"PointLightComponent-Intensity"};
+	return {
+		"PointLightComponent:Intensity",
+		"PointLightComponent:LightColor",
+		"PointLightComponent:AttenuationRadius",
+		"PointLightComponent:bUseInverseSquaredFalloff",
+	};
 }

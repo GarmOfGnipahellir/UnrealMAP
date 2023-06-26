@@ -15,11 +15,19 @@ class UNREALFGD_API UFGDEntity : public UObject
 
 public:
 	UPROPERTY()
+	FString Name;
+
+	UPROPERTY()
 	TMap<FString, TObjectPtr<UFGDProperty>> Properties;
+
+	UPROPERTY()
+	TArray<FString> ClassProperties;
 
 	static UFGDEntity* CreateFromClass(const TArray<FString>& InPaths, const UClass* InClass);
 
 	UFGDProperty* GetPropertyFromName(const FString& InName) const;
 
 	void SetPropertiesOnObject(const TMap<FString, FString>& InProperties, UObject* InObject) const;
+
+	FString ToFGD() const;
 };

@@ -87,4 +87,36 @@ void FFGDEntity_Spec::Define()
 			);
 		}
 	);
+
+	Describe(
+		"ToFGD",
+		[this]
+		{
+			It(
+				"should return vector property",
+				[this]
+				{
+					UFGDEntity* Entity = UFGDEntity::CreateFromClass(
+						{
+							"PointLightComponent:Intensity",
+							"PointLightComponent:LightColor",
+							"PointLightComponent:AttenuationRadius",
+						},
+						APointLight::StaticClass()
+					);
+					Entity->ClassProperties = {"size(16 16 16, -16 -16 -16)", "sphere(attenuation_radius)"};
+					TestEqual(
+						"Float property",
+						Entity->ToFGD(),
+						"@PointClass size(16 16 16, -16 -16 -16) sphere(attenuation_radius) = PointLight : \"\"\n"
+						"[\n"
+						"  intensity(float) : \"PointLightComponent:Intensity\" : \"5000.000000\" : \"Total energy that the light emits.\"\n"
+						"  light_color(color255) : \"PointLightComponent:LightColor\" : \"255 255 255\" : \"Filter color of the light. Note that this can change the light's effective intensity.\"\n"
+						"  attenuation_radius(float) : \"PointLightComponent:AttenuationRadius\" : \"1000.000000\" : \"Bounds the light's visible influence. This clamping of the light's influence is not physically correct but very important for performance, larger lights cost more.\"\n"
+						"]"
+					);
+				}
+			);
+		}
+	);
 }

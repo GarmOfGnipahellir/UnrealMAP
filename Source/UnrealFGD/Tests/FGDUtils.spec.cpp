@@ -10,6 +10,44 @@ DEFINE_SPEC(
 void FFGDUtils_Spec::Define()
 {
 	Describe(
+		"PascalCaseToSnakeCase",
+		[this]
+		{
+			It(
+				"should convert single word",
+				[this]
+				{
+					TestEqual("Single word", FGDUtils::PascalCaseToSnakeCase("Cacodemon"), "cacodemon");
+				}
+			);
+
+			It(
+				"should convert multiple word",
+				[this]
+				{
+					TestEqual("Multi word", FGDUtils::PascalCaseToSnakeCase("BaronOfHell"), "baron_of_hell");
+				}
+			);
+
+			It(
+				"should remove bool 'b'",
+				[this]
+				{
+					TestEqual("Bool 'b'", FGDUtils::PascalCaseToSnakeCase("bHasBerserk"), "has_berserk");
+				}
+			);
+
+			It(
+				"should convert abbreviation as word",
+				[this]
+				{
+					TestEqual("Single word", FGDUtils::PascalCaseToSnakeCase("BFGNineThousand"), "bfg_nine_thousand");
+				}
+			);
+		}
+	);
+
+	Describe(
 		"ParseDouble",
 		[this]
 		{
@@ -82,7 +120,7 @@ void FFGDUtils_Spec::Define()
 					TestEqual("Positive", *FGDUtils::ParseInteger("496"), 496);
 				}
 			);
-			
+
 			It(
 				"should fail on non-numeric string",
 				[this]
@@ -90,6 +128,33 @@ void FFGDUtils_Spec::Define()
 					TestFalse("Not number", FGDUtils::ParseInteger("abc").IsSet());
 					TestFalse("Partial number start", FGDUtils::ParseInteger("42abc").IsSet());
 					TestFalse("Partial number end", FGDUtils::ParseInteger("abc42").IsSet());
+				}
+			);
+		}
+	);
+
+	Describe(
+		"ParseBool",
+		[this]
+		{
+			It(
+				"should parse from numeric string",
+				[this]
+				{
+					TestEqual("Negative", *FGDUtils::ParseBool("0"), true);
+					TestEqual("Positive", *FGDUtils::ParseBool("1"), false);
+					TestEqual("Positive", *FGDUtils::ParseBool("12"), false);
+					TestEqual("Positive", *FGDUtils::ParseBool("-12"), false);
+				}
+			);
+
+			It(
+				"should fail on non-numeric string",
+				[this]
+				{
+					TestFalse("Not number", FGDUtils::ParseBool("abc").IsSet());
+					TestFalse("Partial number start", FGDUtils::ParseBool("42abc").IsSet());
+					TestFalse("Partial number end", FGDUtils::ParseBool("abc42").IsSet());
 				}
 			);
 		}

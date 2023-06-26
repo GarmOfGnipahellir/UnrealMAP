@@ -9,6 +9,8 @@ UFGDEntity* UFGDEntity::CreateFromClass(const TArray<FString>& InPaths, const UC
 {
 	UFGDEntity* Result = NewObject<UFGDEntity>();
 
+	Result->Name = InClass->GetName();
+
 	for (const FString& Path : InPaths)
 	{
 		UFGDProperty* Property = UFGDProperty::CreateFromClass(Path, InClass);
@@ -36,4 +38,16 @@ void UFGDEntity::SetPropertiesOnObject(const TMap<FString, FString>& InPropertie
 		if (!Property) continue;
 		Property->SetOnObject(KVP.Value, InObject);
 	}
+}
+
+FString UFGDEntity::ToFGD() const
+{
+	FString ClassPropertiesString = FString::Join(ClassProperties, TEXT(" "));
+	FString Result = FString::Printf(TEXT("@PointClass %s = %s : \"\"\n[\n"), *ClassPropertiesString, *Name);
+	for (const auto KVP : Properties)
+	{
+		Result += "  " + KVP.Value->ToFGD() + "\n";
+	}
+	Result += "]";
+	return Result;
 }

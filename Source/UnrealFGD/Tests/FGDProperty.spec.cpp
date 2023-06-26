@@ -59,6 +59,29 @@ void FFGDProperty_Spec::Define()
 			);
 
 			It(
+				"should create bool property",
+				[this]
+				{
+					const UFGDProperty* Property = UFGDProperty::CreateFromClass(
+						"PointLightComponent:bUseInverseSquaredFalloff",
+						APointLight::StaticClass()
+					);
+					TestEqual("Name", Property->Name, "use_inverse_squared_falloff");
+					TestEqual("Path", Property->Path, "PointLightComponent:bUseInverseSquaredFalloff");
+					TestEqual("Type", Property->Type, "boolean");
+					TestEqual("Default", Property->Default, "1");
+					TestEqual(
+						"Description",
+						Property->Description,
+						"Whether to use physically based inverse squared distance falloff, where AttenuationRadius is only clamping the light's contribution. "
+						"Disabling inverse squared falloff can be useful when placing fill lights (don't want a super bright spot near the light). "
+						"When enabled, the light's Intensity is in units of lumens, where 1700 lumens is a 100W lightbulb. "
+						"When disabled, the light's Intensity is a brightness scale."
+					);
+				}
+			);
+
+			It(
 				"should create color property",
 				[this]
 				{
@@ -73,7 +96,7 @@ void FFGDProperty_Spec::Define()
 					TestEqual(
 						"Description",
 						Property->Description,
-						"Filter color of the light.\nNote that this can change the light's effective intensity."
+						"Filter color of the light. Note that this can change the light's effective intensity."
 					);
 				}
 			);
@@ -141,6 +164,24 @@ void FFGDProperty_Spec::Define()
 			);
 
 			It(
+				"should set bool property",
+				[this]
+				{
+					UWorld* World = FAutomationEditorCommonUtils::CreateNewMap();
+
+					const UFGDProperty* Property = UFGDProperty::CreateFromClass(
+						"PointLightComponent:bUseInverseSquaredFalloff",
+						APointLight::StaticClass()
+					);
+
+					APointLight* PointLight = World->SpawnActor<APointLight>();
+					TestNotEqual("Pre set", (bool)PointLight->PointLightComponent->bUseInverseSquaredFalloff, false);
+					Property->SetOnObject("1", PointLight);
+					TestEqual("Post set", (bool)PointLight->PointLightComponent->bUseInverseSquaredFalloff, false);
+				}
+			);
+
+			It(
 				"should set color property",
 				[this]
 				{
@@ -173,6 +214,97 @@ void FFGDProperty_Spec::Define()
 					TestNotEqual("Pre set", PointLight->PointLightComponent->GetRelativeLocation(), FVector(1, 2, 3));
 					Property->SetOnObject("1 2 3", PointLight);
 					TestEqual("Post set", PointLight->PointLightComponent->GetRelativeLocation(), FVector(1, 2, 3));
+				}
+			);
+		}
+	);
+
+	Describe(
+		"ToFGD",
+		[this]
+		{
+			It(
+				"should return string property",
+				[this]
+				{
+					const UFGDProperty* Property = UFGDProperty::CreateFromClass(
+						"PlayerStartTag",
+						APlayerStart::StaticClass()
+					);
+					TestEqual(
+						"String property",
+						Property->ToFGD(),
+						"player_start_tag(string) : \"PlayerStartTag\" : \"None\" : \"Used when searching for which playerstart to use.\""
+					);
+				}
+			);
+
+			It(
+				"should return float property",
+				[this]
+				{
+					const UFGDProperty* Property = UFGDProperty::CreateFromClass(
+						"PointLightComponent:Intensity",
+						APointLight::StaticClass()
+					);
+					TestEqual(
+						"Float property",
+						Property->ToFGD(),
+						"intensity(float) : \"PointLightComponent:Intensity\" : \"5000.000000\" : \"Total energy that the light emits.\""
+					);
+				}
+			);
+
+			It(
+				"should return bool property",
+				[this]
+				{
+					const UFGDProperty* Property = UFGDProperty::CreateFromClass(
+						"PointLightComponent:bUseInverseSquaredFalloff",
+						APointLight::StaticClass()
+					);
+					TestEqual(
+						"Bool property",
+						Property->ToFGD(),
+						"use_inverse_squared_falloff(boolean) : \"PointLightComponent:bUseInverseSquaredFalloff\" : \"1\" : \""
+						"Whether to use physically based inverse squared distance falloff, where AttenuationRadius is only clamping the light's contribution. "
+						"Disabling inverse squared falloff can be useful when placing fill lights (don't want a super bright spot near the light). "
+						"When enabled, the light's Intensity is in units of lumens, where 1700 lumens is a 100W lightbulb. "
+						"When disabled, the light's Intensity is a brightness scale."
+						"\""
+					);
+				}
+			);
+
+			It(
+				"should return color property",
+				[this]
+				{
+					const UFGDProperty* Property = UFGDProperty::CreateFromClass(
+						"PointLightComponent:LightColor",
+						APointLight::StaticClass()
+					);
+					TestEqual(
+						"Float property",
+						Property->ToFGD(),
+						"light_color(color255) : \"PointLightComponent:LightColor\" : \"255 255 255\" : \"Filter color of the light. Note that this can change the light's effective intensity.\""
+					);
+				}
+			);
+
+			It(
+				"should return vector property",
+				[this]
+				{
+					const UFGDProperty* Property = UFGDProperty::CreateFromClass(
+						"StaticMeshComponent:RelativeLocation",
+						AStaticMeshActor::StaticClass()
+					);
+					TestEqual(
+						"Float property",
+						Property->ToFGD(),
+						"relative_location(vector) : \"StaticMeshComponent:RelativeLocation\" : \"0.000000 0.000000 0.000000\" : \"Location of the component relative to its parent\""
+					);
 				}
 			);
 		}

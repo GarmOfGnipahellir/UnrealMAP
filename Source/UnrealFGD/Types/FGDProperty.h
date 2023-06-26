@@ -31,6 +31,8 @@ public:
 
 	void SetOnObject(const FString& InValue, UObject* InObject) const;
 
+	FString ToFGD() const;
+
 protected:
 	static UObject* GetContainerFromPath(const FString& InPath, UObject* InObject);
 };

@@ -16,7 +16,7 @@ UFGDProperty* UFGDProperty::CreateFromClass(const FString& InPath, const UClass*
 	UFGDProperty* Result = NewObject<UFGDProperty>();
 	Result->Name = FGDUtils::PascalCaseToSnakeCase(Property->GetName());
 	Result->Path = InPath;
-	Result->Description = Property->GetToolTipText().ToString();
+	Result->Description = Property->GetToolTipText().ToString().Replace(TEXT("\n"), TEXT(" "));
 
 	if (const FStrProperty* StrProperty = CastField<FStrProperty>(Property))
 	{
@@ -32,6 +32,12 @@ UFGDProperty* UFGDProperty::CreateFromClass(const FString& InPath, const UClass*
 	{
 		Result->Type = "float";
 		Result->Default = FloatProperty->GetNumericPropertyValueToString_InContainer(Container);
+	}
+	else if (const FBoolProperty* BoolProperty = CastField<FBoolProperty>(Property))
+	{
+		// TODO: Use choices
+		Result->Type = "boolean";
+		Result->Default = BoolProperty->GetPropertyValue(Container) ? "0" : "1";
 	}
 	else if (const FStructProperty* StructProperty = CastField<FStructProperty>(Property))
 	{
@@ -83,6 +89,18 @@ void UFGDProperty::SetOnObject(const FString& InValue, UObject* InObject) const
 		FloatProperty->SetNumericPropertyValueFromString_InContainer(Container, *InValue);
 		return;
 	}
+	if (const FBoolProperty* BoolProperty = CastField<FBoolProperty>(Property))
+	{
+		// TODO: Use choices
+		const TOptional<bool> Boolean = FGDUtils::ParseBool(InValue);
+		if (!Boolean)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Failed to parse bool from '%s'."), *InValue)
+			return;
+		}
+		BoolProperty->SetPropertyValue_InContainer(Container, *Boolean);
+		return;
+	}
 	if (const FStructProperty* StructProperty = CastField<FStructProperty>(Property))
 	{
 		if (StructProperty->Struct->GetName() == "Vector")
@@ -113,6 +131,20 @@ void UFGDProperty::SetOnObject(const FString& InValue, UObject* InObject) const
 	}
 
 	UE_LOG(LogTemp, Warning, TEXT("Unsupported property type '%s'."), *Property->GetClass()->GetName())
+}
+
+FString UFGDProperty::ToFGD() const
+{
+	FString Result = FString::Printf(
+		TEXT("%s(%s) : \"%s\" : \"%s\" : \"%s\""),
+		*Name,
+		*Type,
+		*Path,
+		*Default,
+		*Description
+	);
+	// TODO: Handle choices/flags
+	return Result;
 }
 
 UObject* UFGDProperty::GetContainerFromPath(const FString& InPath, UObject* InObject)

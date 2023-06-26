@@ -46,6 +46,7 @@ public class UnrealMAP : ModuleRules
 				"Json",
 				"JsonUtilities",
 				"DirectoryWatcher",
+				"UnrealFGD",
 				// ... add private dependencies that you statically link with here ...	
 			}
 		);

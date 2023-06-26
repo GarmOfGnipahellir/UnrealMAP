@@ -9,11 +9,19 @@
 FString FGDUtils::PascalCaseToSnakeCase(const FString& InString)
 {
 	FString Result;
-	for (const auto Char : InString)
+	for (int i = 0; i < InString.Len(); ++i)
 	{
+		const auto Char = InString[i];
+
+		// Skip first 'b' on bool properties
+		if (Char == 'b' && Result.IsEmpty() && InString.Len() > 1)
+		{
+			continue;
+		}
+
 		if (std::iswupper(Char))
 		{
-			if (!Result.IsEmpty())
+			if (!Result.IsEmpty() && i < InString.Len() - 1 && std::iswlower(InString[i + 1]))
 			{
 				Result += '_';
 			}
@@ -49,6 +57,13 @@ TOptional<int> FGDUtils::ParseInteger(const FString& InString)
 {
 	if (!InString.IsNumeric()) return TOptional<int>();
 	return FCString::Atoi(*InString);
+}
+
+TOptional<bool> FGDUtils::ParseBool(const FString& InString)
+{
+	const TOptional<int> Integer = ParseInteger(InString);
+	if (!Integer) return TOptional<bool>();
+	return *Integer == 0;
 }
 
 TOptional<FVector> FGDUtils::ParseVector(const FString& InString)
