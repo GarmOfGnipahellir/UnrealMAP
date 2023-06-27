@@ -3,7 +3,6 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "MAPEntityTypes.h"
 #include "UObject/Object.h"
 #include "MAPEntityTranslator.generated.h"
 

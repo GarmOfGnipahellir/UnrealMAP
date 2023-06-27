@@ -10,10 +10,6 @@ class UFGDEntity;
 class FUnrealFGDModule : public IModuleInterface
 {
 public:
-	static FUnrealFGDModule* Get();
-	
 	virtual void StartupModule() override;
 	virtual void ShutdownModule() override;
-
-	UFGDEntity* ObjectClassToEntityDefinition(UClass* InClass);
 };

@@ -16,6 +16,7 @@
 #include "Engine/StaticMeshActor.h"
 #include "GameFramework/PlayerStart.h"
 #include "Misc/FileHelper.h"
+#include "UnrealFGD/Types/FGDEntity.h"
 
 
 UMAPComponent::UMAPComponent()
@@ -312,6 +313,8 @@ void UMAPComponent::SpawnEntity(UWorld* World, const FMAPEntity& Entity, const i
 	{
 		EntityActor->GetRootComponent()->SetRelativeLocation(Origin);
 	}
+	
+	// TODO: Handle all FGD properties
 
 	for (int i = 0; i < Entity.Brushes.Num(); ++i)
 	{

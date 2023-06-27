@@ -190,12 +190,12 @@ bool UMAPConfigExporter::ExportGameEngineProfiles(const UMAPConfig* Config, cons
 
 FString UMAPConfigExporter::ActorClassToEntityDefinition(const TSubclassOf<AActor> ActorClass)
 {
-	UMAPEntityTranslator* SupportedTranslator = nullptr;
+	const UMAPEntityTranslator* SupportedTranslator = nullptr;
 	for (TObjectIterator<UClass> It; It; ++It)
 	{
 		if ((*It)->IsChildOf(UMAPEntityTranslator::StaticClass()))
 		{
-			UMAPEntityTranslator* Translator = (*It)->GetDefaultObject<UMAPEntityTranslator>();
+			const UMAPEntityTranslator* Translator = (*It)->GetDefaultObject<UMAPEntityTranslator>();
 			if (ActorClass->IsChildOf(Translator->GetSupportedClass()))
 			{
 				SupportedTranslator = Translator;

@@ -3,6 +3,7 @@
 
 #include "FGDProperty.h"
 
+#include "UnrealFGD/FGDLog.h"
 #include "UnrealFGD/FGDUtils.h"
 
 UFGDProperty* UFGDProperty::CreateFromClass(const FString& InPath, const UClass* InClass)
@@ -63,12 +64,12 @@ UFGDProperty* UFGDProperty::CreateFromClass(const FString& InPath, const UClass*
 		}
 		else
 		{
-			UE_LOG(LogTemp, Warning, TEXT("Unsupported struct property type '%s'."), *StructProperty->Struct->GetName())
+			UE_LOG(LogFGD, Warning, TEXT("Unsupported struct property type '%s'."), *StructProperty->Struct->GetName())
 		}
 	}
 	else
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Unsupported property type '%s'."), *Property->GetClass()->GetName())
+		UE_LOG(LogFGD, Warning, TEXT("Unsupported property type '%s'."), *Property->GetClass()->GetName())
 	}
 
 	return Result;
@@ -102,7 +103,7 @@ void UFGDProperty::SetOnObject(const FString& InValue, UObject* InObject) const
 		const TOptional<bool> Boolean = FGDUtils::ParseBool(InValue);
 		if (!Boolean)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("Failed to parse bool from '%s'."), *InValue)
+			UE_LOG(LogFGD, Warning, TEXT("Failed to parse bool from '%s'."), *InValue)
 			return;
 		}
 		BoolProperty->SetPropertyValue_InContainer(Container, *Boolean);
@@ -115,7 +116,7 @@ void UFGDProperty::SetOnObject(const FString& InValue, UObject* InObject) const
 			const TOptional<FVector> Vector = FGDUtils::ParseVector(InValue);
 			if (!Vector)
 			{
-				UE_LOG(LogTemp, Warning, TEXT("Failed to parse vector from '%s'."), *InValue)
+				UE_LOG(LogFGD, Warning, TEXT("Failed to parse vector from '%s'."), *InValue)
 				return;
 			}
 			StructProperty->SetValue_InContainer(Container, new FVector(*Vector));
@@ -126,18 +127,18 @@ void UFGDProperty::SetOnObject(const FString& InValue, UObject* InObject) const
 			const TOptional<FColor> Color = FGDUtils::ParseColor(InValue);
 			if (!Color)
 			{
-				UE_LOG(LogTemp, Warning, TEXT("Failed to parse color from '%s'."), *InValue)
+				UE_LOG(LogFGD, Warning, TEXT("Failed to parse color from '%s'."), *InValue)
 				return;
 			}
 			StructProperty->SetValue_InContainer(Container, new FColor(*Color));
 			return;
 		}
 
-		UE_LOG(LogTemp, Warning, TEXT("Unsupported struct property type '%s'."), *StructProperty->Struct->GetName())
+		UE_LOG(LogFGD, Warning, TEXT("Unsupported struct property type '%s'."), *StructProperty->Struct->GetName())
 		return;
 	}
 
-	UE_LOG(LogTemp, Warning, TEXT("Unsupported property type '%s'."), *Property->GetClass()->GetName())
+	UE_LOG(LogFGD, Warning, TEXT("Unsupported property type '%s'."), *Property->GetClass()->GetName())
 }
 
 FString UFGDProperty::ToFGD() const
@@ -185,7 +186,7 @@ UObject* UFGDProperty::GetContainerFromPath(const FString& InPath, UObject* InOb
 			const FObjectProperty* ObjectProperty = CastField<FObjectProperty>(Property);
 			if (!ObjectProperty)
 			{
-				UE_LOG(LogTemp, Error, TEXT("Can only visit UObject in paths '%s'."), *InPath)
+				UE_LOG(LogFGD, Error, TEXT("Can only visit UObject in paths '%s'."), *InPath)
 				return nullptr;
 			}
 			Container = ObjectProperty->GetObjectPropertyValue_InContainer(Container);
