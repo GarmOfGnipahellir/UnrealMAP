@@ -12,13 +12,6 @@ UClass* UMAPEntityTranslator_PointLight::GetSupportedClass_Implementation() cons
 	return APointLight::StaticClass();
 }
 
-TArray<FString> UMAPEntityTranslator_PointLight::GetClassProperties_Implementation(TSubclassOf<AActor> ActorClass) const
-{
-	TArray<FString> Result = Super::GetClassProperties_Implementation(ActorClass);
-	Result.Add("sphere(attenuation_radius)");
-	return Result;
-}
-
 TArray<FString> UMAPEntityTranslator_PointLight::GetPropertyPaths_Implementation(TSubclassOf<AActor> ActorClass) const
 {
 	return {

@@ -68,8 +68,16 @@ void FFGDProperty_Spec::Define()
 					);
 					TestEqual("Name", Property->Name, "use_inverse_squared_falloff");
 					TestEqual("Path", Property->Path, "PointLightComponent:bUseInverseSquaredFalloff");
-					TestEqual("Type", Property->Type, "boolean");
+					TestEqual("Type", Property->Type, "choices");
 					TestEqual("Default", Property->Default, "1");
+					TestEqual(
+						"Choices",
+						Property->Choices,
+						{
+							{"0", "false"},
+							{"1", "true"},
+						}
+					);
 					TestEqual(
 						"Description",
 						Property->Description,
@@ -77,6 +85,41 @@ void FFGDProperty_Spec::Define()
 						"Disabling inverse squared falloff can be useful when placing fill lights (don't want a super bright spot near the light). "
 						"When enabled, the light's Intensity is in units of lumens, where 1700 lumens is a 100W lightbulb. "
 						"When disabled, the light's Intensity is a brightness scale."
+					);
+				}
+			);
+
+			// TODO: Handle flags
+			xIt(
+				"should create flags property",
+				[this]
+				{
+					const UFGDProperty* Property = UFGDProperty::CreateFromClass(
+						"StaticMeshComponent:ExcludeFromHLODLevels",
+						AStaticMeshActor::StaticClass()
+					);
+					TestEqual("Name", Property->Name, "exclude_from_hlod_levels");
+					TestEqual("Path", Property->Path, "StaticMeshComponent:ExcludeFromHLODLevels");
+					TestEqual("Type", Property->Type, "flags");
+					TestEqual("Default", Property->Default, "0");
+					TestEqual(
+						"Flags",
+						Property->Flags,
+						{
+							{1 << 0, "HLOD0", false},
+							{1 << 1, "HLOD0", false},
+							{1 << 2, "HLOD0", false},
+							{1 << 3, "HLOD0", false},
+							{1 << 4, "HLOD0", false},
+							{1 << 5, "HLOD0", false},
+							{1 << 6, "HLOD0", false},
+							{1 << 7, "HLOD0", false},
+						}
+					);
+					TestEqual(
+						"Description",
+						Property->Description,
+						"Which specific HLOD levels this component should be excluded from"
 					);
 				}
 			);
@@ -176,7 +219,7 @@ void FFGDProperty_Spec::Define()
 
 					APointLight* PointLight = World->SpawnActor<APointLight>();
 					TestNotEqual("Pre set", (bool)PointLight->PointLightComponent->bUseInverseSquaredFalloff, false);
-					Property->SetOnObject("1", PointLight);
+					Property->SetOnObject("0", PointLight);
 					TestEqual("Post set", (bool)PointLight->PointLightComponent->bUseInverseSquaredFalloff, false);
 				}
 			);
@@ -234,7 +277,7 @@ void FFGDProperty_Spec::Define()
 					TestEqual(
 						"String property",
 						Property->ToFGD(),
-						"player_start_tag(string) : \"PlayerStartTag\" : \"None\" : \"Used when searching for which playerstart to use.\""
+						"  player_start_tag(string) : \"PlayerStartTag\" : \"None\" : \"Used when searching for which playerstart to use.\""
 					);
 				}
 			);
@@ -250,7 +293,7 @@ void FFGDProperty_Spec::Define()
 					TestEqual(
 						"Float property",
 						Property->ToFGD(),
-						"intensity(float) : \"PointLightComponent:Intensity\" : \"5000.000000\" : \"Total energy that the light emits.\""
+						"  intensity(float) : \"PointLightComponent:Intensity\" : \"5000.000000\" : \"Total energy that the light emits.\""
 					);
 				}
 			);
@@ -266,12 +309,16 @@ void FFGDProperty_Spec::Define()
 					TestEqual(
 						"Bool property",
 						Property->ToFGD(),
-						"use_inverse_squared_falloff(boolean) : \"PointLightComponent:bUseInverseSquaredFalloff\" : \"1\" : \""
+						"  use_inverse_squared_falloff(choices) : \"PointLightComponent:bUseInverseSquaredFalloff\" : \"1\" : \""
 						"Whether to use physically based inverse squared distance falloff, where AttenuationRadius is only clamping the light's contribution. "
 						"Disabling inverse squared falloff can be useful when placing fill lights (don't want a super bright spot near the light). "
 						"When enabled, the light's Intensity is in units of lumens, where 1700 lumens is a 100W lightbulb. "
 						"When disabled, the light's Intensity is a brightness scale."
-						"\""
+						"\" =\n"
+						"  [\n"
+						"    \"0\" : \"false\"\n"
+						"    \"1\" : \"true\"\n"
+						"  ]"
 					);
 				}
 			);
@@ -287,7 +334,7 @@ void FFGDProperty_Spec::Define()
 					TestEqual(
 						"Float property",
 						Property->ToFGD(),
-						"light_color(color255) : \"PointLightComponent:LightColor\" : \"255 255 255\" : \"Filter color of the light. Note that this can change the light's effective intensity.\""
+						"  light_color(color255) : \"PointLightComponent:LightColor\" : \"255 255 255\" : \"Filter color of the light. Note that this can change the light's effective intensity.\""
 					);
 				}
 			);
@@ -303,7 +350,7 @@ void FFGDProperty_Spec::Define()
 					TestEqual(
 						"Float property",
 						Property->ToFGD(),
-						"relative_location(vector) : \"StaticMeshComponent:RelativeLocation\" : \"0.000000 0.000000 0.000000\" : \"Location of the component relative to its parent\""
+						"  relative_location(vector) : \"StaticMeshComponent:RelativeLocation\" : \"0.000000 0.000000 0.000000\" : \"Location of the component relative to its parent\""
 					);
 				}
 			);

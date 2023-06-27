@@ -28,6 +28,11 @@ UFGDProperty* UFGDProperty::CreateFromClass(const FString& InPath, const UClass*
 		Result->Type = "string";
 		Result->Default = NameProperty->GetPropertyValue_InContainer(Container).ToString();
 	}
+	else if (const FByteProperty* ByteProperty = CastField<FByteProperty>(Property))
+	{
+		// TODO: Handle flags
+		UE_LOG(LogTemp, Warning, TEXT("Unimplemented property type '%s'."), *ByteProperty->GetClass()->GetName())
+	}
 	else if (const FFloatProperty* FloatProperty = CastField<FFloatProperty>(Property))
 	{
 		Result->Type = "float";
@@ -35,9 +40,12 @@ UFGDProperty* UFGDProperty::CreateFromClass(const FString& InPath, const UClass*
 	}
 	else if (const FBoolProperty* BoolProperty = CastField<FBoolProperty>(Property))
 	{
-		// TODO: Use choices
-		Result->Type = "boolean";
-		Result->Default = BoolProperty->GetPropertyValue(Container) ? "0" : "1";
+		Result->Type = "choices";
+		Result->Default = BoolProperty->GetPropertyValue_InContainer(Container) ? "1" : "0";
+		Result->Choices = {
+			{"0", "false"},
+			{"1", "true"},
+		};
 	}
 	else if (const FStructProperty* StructProperty = CastField<FStructProperty>(Property))
 	{
@@ -91,7 +99,6 @@ void UFGDProperty::SetOnObject(const FString& InValue, UObject* InObject) const
 	}
 	if (const FBoolProperty* BoolProperty = CastField<FBoolProperty>(Property))
 	{
-		// TODO: Use choices
 		const TOptional<bool> Boolean = FGDUtils::ParseBool(InValue);
 		if (!Boolean)
 		{
@@ -136,14 +143,31 @@ void UFGDProperty::SetOnObject(const FString& InValue, UObject* InObject) const
 FString UFGDProperty::ToFGD() const
 {
 	FString Result = FString::Printf(
-		TEXT("%s(%s) : \"%s\" : \"%s\" : \"%s\""),
+		TEXT("  %s(%s) : \"%s\" : \"%s\" : \"%s\""),
 		*Name,
 		*Type,
 		*Path,
 		*Default,
 		*Description
 	);
-	// TODO: Handle choices/flags
+	if (Type == "choices")
+	{
+		Result += " =\n  [\n";
+		for (auto [Value, Text] : Choices)
+		{
+			Result += FString::Printf(TEXT("    \"%s\" : \"%s\"\n"), *Value, *Text);
+		}
+		Result += "  ]";
+	}
+	if (Type == "flags")
+	{
+		Result += " =\n  [\n";
+		for (auto [Value, Text, bIsTicked] : Flags)
+		{
+			Result += FString::Printf(TEXT("    %d : \"%s\" : %d\n"), Value, *Text, bIsTicked ? 1 : 0);
+		}
+		Result += "  ]";
+	}
 	return Result;
 }
 

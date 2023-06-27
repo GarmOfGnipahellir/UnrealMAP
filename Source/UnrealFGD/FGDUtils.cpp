@@ -63,7 +63,7 @@ TOptional<bool> FGDUtils::ParseBool(const FString& InString)
 {
 	const TOptional<int> Integer = ParseInteger(InString);
 	if (!Integer) return TOptional<bool>();
-	return *Integer == 0;
+	return *Integer > 0;
 }
 
 TOptional<FVector> FGDUtils::ParseVector(const FString& InString)

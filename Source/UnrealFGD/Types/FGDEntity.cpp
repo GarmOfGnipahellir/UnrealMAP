@@ -42,11 +42,11 @@ void UFGDEntity::SetPropertiesOnObject(const TMap<FString, FString>& InPropertie
 
 FString UFGDEntity::ToFGD() const
 {
-	FString ClassPropertiesString = FString::Join(ClassProperties, TEXT(" "));
+	const FString ClassPropertiesString = FString::Join(ClassProperties, TEXT(" "));
 	FString Result = FString::Printf(TEXT("@PointClass %s = %s : \"\"\n[\n"), *ClassPropertiesString, *Name);
 	for (const auto KVP : Properties)
 	{
-		Result += "  " + KVP.Value->ToFGD() + "\n";
+		Result += KVP.Value->ToFGD() + "\n";
 	}
 	Result += "]";
 	return Result;

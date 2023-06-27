@@ -141,9 +141,9 @@ void FFGDUtils_Spec::Define()
 				"should parse from numeric string",
 				[this]
 				{
-					TestEqual("Negative", *FGDUtils::ParseBool("0"), true);
-					TestEqual("Positive", *FGDUtils::ParseBool("1"), false);
-					TestEqual("Positive", *FGDUtils::ParseBool("12"), false);
+					TestEqual("Negative", *FGDUtils::ParseBool("0"), false);
+					TestEqual("Positive", *FGDUtils::ParseBool("1"), true);
+					TestEqual("Positive", *FGDUtils::ParseBool("12"), true);
 					TestEqual("Positive", *FGDUtils::ParseBool("-12"), false);
 				}
 			);

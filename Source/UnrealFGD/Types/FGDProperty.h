@@ -6,6 +6,43 @@
 #include "UObject/Object.h"
 #include "FGDProperty.generated.h"
 
+USTRUCT()
+struct FFGDPropertyChoice
+{
+	GENERATED_BODY()
+
+	UPROPERTY(Category="FGDPropertyFlag", EditAnywhere)
+	FString Value;
+
+	UPROPERTY(Category="FGDPropertyFlag", EditAnywhere)
+	FString Text;
+
+	FORCEINLINE bool operator==(const FFGDPropertyChoice& Other) const
+	{
+		return Value == Other.Value && Text == Other.Text;
+	}
+};
+
+USTRUCT()
+struct FFGDPropertyFlag
+{
+	GENERATED_BODY()
+
+	UPROPERTY(Category="FGDPropertyFlag", EditAnywhere)
+	uint8 Value;
+
+	UPROPERTY(Category="FGDPropertyFlag", EditAnywhere)
+	FString Text;
+
+	UPROPERTY(Category="FGDPropertyFlag", EditAnywhere)
+	bool bIsTicked;
+
+	FORCEINLINE bool operator==(const FFGDPropertyFlag& Other) const
+	{
+		return Value == Other.Value && Text == Other.Text && bIsTicked == Other.bIsTicked;
+	}
+};
+
 UCLASS()
 class UNREALFGD_API UFGDProperty : public UObject
 {
@@ -26,6 +63,12 @@ public:
 
 	UPROPERTY(Category="FGDProperty", EditAnywhere)
 	FString Description;
+
+	UPROPERTY(Category="FGDProperty", EditAnywhere)
+	TArray<FFGDPropertyChoice> Choices;
+
+	UPROPERTY(Category="FGDProperty", EditAnywhere)
+	TArray<FFGDPropertyFlag> Flags;
 
 	static UFGDProperty* CreateFromClass(const FString& InPath, const UClass* InClass);
 
